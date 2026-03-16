@@ -1,0 +1,237 @@
+{
+  "info": {
+    "name": "Filmorate API",
+    "description": "Коллекция для ручной проверки API Filmorate (Postman / Insomnia). Запустите приложение (mvn spring-boot:run), baseUrl по умолчанию: http://localhost:8080.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:8080" },
+    { "key": "filmId", "value": "1" },
+    { "key": "userId", "value": "1" }
+  ],
+  "item": [
+    {
+      "name": "Films",
+      "item": [
+        {
+          "name": "Get all films",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/films",
+            "description": "Получить список всех фильмов"
+          }
+        },
+        {
+          "name": "Add film (valid)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Крестный отец\",\n  \"description\": \"Эпическая сага о семье Корлеоне\",\n  \"releaseDate\": \"1972-03-24\",\n  \"duration\": 175\n}"
+            },
+            "url": "{{baseUrl}}/films",
+            "description": "Добавить фильм - валидные данные"
+          }
+        },
+        {
+          "name": "Add film (invalid - empty name)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"\",\n  \"description\": \"Описание\",\n  \"releaseDate\": \"1990-01-01\",\n  \"duration\": 120\n}"
+            },
+            "url": "{{baseUrl}}/films",
+            "description": "Ожидается 400 - название пустое"
+          }
+        },
+        {
+          "name": "Add film (invalid - releaseDate before 1895-12-28)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Фильм\",\n  \"description\": \"Описание\",\n  \"releaseDate\": \"1895-12-27\",\n  \"duration\": 120\n}"
+            },
+            "url": "{{baseUrl}}/films",
+            "description": "Ожидается 400 - дата раньше 28.12.1895"
+          }
+        },
+        {
+          "name": "Add film (invalid - duration not positive)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Фильм\",\n  \"description\": \"Описание\",\n  \"releaseDate\": \"1990-01-01\",\n  \"duration\": 0\n}"
+            },
+            "url": "{{baseUrl}}/films",
+            "description": "Ожидается 400 - продолжительность не положительная"
+          }
+        },
+        {
+          "name": "Update film",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"id\": 1,\n  \"name\": \"Крестный отец (обновлено)\",\n  \"description\": \"Эпическая сага о семье Корлеоне\",\n  \"releaseDate\": \"1972-03-24\",\n  \"duration\": 175\n}"
+            },
+            "url": "{{baseUrl}}/films",
+            "description": "Обновить фильм. Подставь актуальный id после создания."
+          }
+        },
+        {
+          "name": "Update film (not found)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"id\": 99999,\n  \"name\": \"Фильм\",\n  \"description\": \"Описание\",\n  \"releaseDate\": \"1990-01-01\",\n  \"duration\": 120\n}"
+            },
+            "url": "{{baseUrl}}/films",
+            "description": "Ожидается 404 - фильм с таким id не существует"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Users",
+      "item": [
+        {
+          "name": "Get all users",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/users",
+            "description": "Получить список всех пользователей"
+          }
+        },
+        {
+          "name": "Create user (valid)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"user@mail.ru\",\n  \"login\": \"user\",\n  \"name\": \"Иван Иванов\",\n  \"birthday\": \"1990-05-15\"\n}"
+            },
+            "url": "{{baseUrl}}/users",
+            "description": "Создать пользователя - валидные данные"
+          }
+        },
+        {
+          "name": "Create user (empty name → use login)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"nick@yandex.ru\",\n  \"login\": \"nick\",\n  \"birthday\": \"1995-01-01\"\n}"
+            },
+            "url": "{{baseUrl}}/users",
+            "description": "Имя пустое - в ответе name должен быть равен login"
+          }
+        },
+        {
+          "name": "Create user (invalid - bad email)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"invalid-email\",\n  \"login\": \"user\",\n  \"birthday\": \"1990-01-01\"\n}"
+            },
+            "url": "{{baseUrl}}/users",
+            "description": "Ожидается 400 - некорректный email"
+          }
+        },
+        {
+          "name": "Create user (invalid - login with spaces)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"user@mail.ru\",\n  \"login\": \"user name\",\n  \"birthday\": \"1990-01-01\"\n}"
+            },
+            "url": "{{baseUrl}}/users",
+            "description": "Ожидается 400 - логин с пробелами"
+          }
+        },
+        {
+          "name": "Create user (invalid - future birthday)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"user@mail.ru\",\n  \"login\": \"user\",\n  \"birthday\": \"2030-01-01\"\n}"
+            },
+            "url": "{{baseUrl}}/users",
+            "description": "Ожидается 400 - дата рождения в будущем"
+          }
+        },
+        {
+          "name": "Update user",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"id\": 1,\n  \"email\": \"user.updated@mail.ru\",\n  \"login\": \"user\",\n  \"name\": \"Иван Петров\",\n  \"birthday\": \"1990-05-15\"\n}"
+            },
+            "url": "{{baseUrl}}/users",
+            "description": "Обновить пользователя. Подставь актуальный id."
+          }
+        },
+        {
+          "name": "Update user (not found)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"id\": 99999,\n  \"email\": \"x@mail.ru\",\n  \"login\": \"x\",\n  \"birthday\": \"1990-01-01\"\n}"
+            },
+            "url": "{{baseUrl}}/users",
+            "description": "Ожидается 404 - пользователь не найден"
+          }
+        }
+      ]
+    }
+  ]
+}
