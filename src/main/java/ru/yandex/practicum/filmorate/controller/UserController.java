@@ -42,6 +42,7 @@ public class UserController {
 
     @GetMapping
     public List<User> getAllUsers() {
+        log.debug("Запрос на получение списка всех пользователей");
         return userService.findAll();
     }
 }

@@ -17,6 +17,6 @@ public class ReleaseDateValidator implements ConstraintValidator<ReleaseDate, Lo
         if (value == null) {
             return true;
         }
-        return !value.isBefore(FIRST_FILM_DATE);
+        return value.isEqual(FIRST_FILM_DATE) || value.isAfter(FIRST_FILM_DATE);
     }
 }

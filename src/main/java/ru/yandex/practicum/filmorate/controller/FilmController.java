@@ -42,6 +42,7 @@ public class FilmController {
 
     @GetMapping
     public List<Film> getAllFilms() {
+        log.debug("Запрос на получение списка всех фильмов");
         return filmService.findAll();
     }
 }
