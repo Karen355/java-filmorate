@@ -1,5 +1,6 @@
 package ru.yandex.practicum.filmorate.controller;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -8,6 +9,7 @@ import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMock
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.MvcResult;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -126,6 +128,53 @@ class FilmControllerTest {
         mockMvc.perform(get("/films"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$").isArray());
+    }
+
+    @Test
+    @DisplayName("GET /films/popular - возвращает список")
+    void getPopular_returnsOk() throws Exception {
+        mockMvc.perform(get("/films/popular"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$").isArray());
+    }
+
+    @Test
+    @DisplayName("GET /films/{id} - возвращает фильм после создания")
+    void getFilmById_returnsOk() throws Exception {
+        MvcResult created = mockMvc.perform(post("/films")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(validFilmJson()))
+                .andExpect(status().isCreated())
+                .andReturn();
+        JsonNode root = objectMapper.readTree(created.getResponse().getContentAsString());
+        int filmId = root.get("id").asInt();
+        mockMvc.perform(get("/films/" + filmId))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value(filmId))
+                .andExpect(jsonPath("$.name").value("Фильм"));
+    }
+
+    @Test
+    @DisplayName("PUT /films/{id}/like/{userId} - лайк (после создания пользователя и фильма)")
+    void addLike_returnsOk() throws Exception {
+        MvcResult userResult = mockMvc.perform(post("/users")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(java.util.Map.of(
+                                "email", "like-user@mail.ru",
+                                "login", "likeuser",
+                                "birthday", "1990-01-01"
+                        ))))
+                .andExpect(status().isCreated())
+                .andReturn();
+        int userId = objectMapper.readTree(userResult.getResponse().getContentAsString()).get("id").asInt();
+        MvcResult filmResult = mockMvc.perform(post("/films")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(validFilmJson()))
+                .andExpect(status().isCreated())
+                .andReturn();
+        int filmId = objectMapper.readTree(filmResult.getResponse().getContentAsString()).get("id").asInt();
+        mockMvc.perform(put("/films/" + filmId + "/like/" + userId))
+                .andExpect(status().isOk());
     }
 
     @Test
