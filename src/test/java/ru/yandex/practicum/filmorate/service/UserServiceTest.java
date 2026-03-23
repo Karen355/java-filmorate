@@ -14,6 +14,7 @@ import java.time.LocalDate;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -32,7 +33,7 @@ class UserServiceTest {
     void addFriend_self_throwsValidationException() {
         assertThatThrownBy(() -> userService.addFriend(1, 1))
                 .isInstanceOf(ValidationException.class)
-                .hasMessageContaining("самого себя");
+                .hasMessageContaining("одним и тем же");
     }
 
     @Test
@@ -44,6 +45,21 @@ class UserServiceTest {
         userService.addFriend(1, 2);
 
         verify(userStorage).addFriend(1, 2);
+    }
+
+    @Test
+    @DisplayName("removeFriend: нельзя удалить самого себя из друзей")
+    void removeFriend_self_throwsValidationException() {
+        assertThatThrownBy(() -> userService.removeFriend(1, 1))
+                .isInstanceOf(ValidationException.class);
+        verify(userStorage, never()).removeFriend(1, 1);
+    }
+
+    @Test
+    @DisplayName("getCommonFriends: одинаковые id - ValidationException")
+    void getCommonFriends_sameIds_throwsValidationException() {
+        assertThatThrownBy(() -> userService.getCommonFriends(1, 1))
+                .isInstanceOf(ValidationException.class);
     }
 
     private static User user(int id) {

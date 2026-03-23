@@ -9,7 +9,6 @@ import ru.yandex.practicum.filmorate.model.Film;
 import ru.yandex.practicum.filmorate.storage.film.FilmStorage;
 import ru.yandex.practicum.filmorate.storage.user.UserStorage;
 
-import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -77,19 +76,7 @@ public class FilmService {
         if (count == 0) {
             return List.of();
         }
-        List<Film> films = new ArrayList<>(filmStorage.findAll());
-        films.sort((a, b) -> {
-            long la = filmStorage.getLikeCount(a.getId());
-            long lb = filmStorage.getLikeCount(b.getId());
-            int cmp = Long.compare(lb, la);
-            if (cmp != 0) {
-                return cmp;
-            }
-            return Integer.compare(
-                    a.getId() == null ? Integer.MAX_VALUE : a.getId(),
-                    b.getId() == null ? Integer.MAX_VALUE : b.getId());
-        });
-        return films.stream().limit(count).toList();
+        return filmStorage.getPopular(count);
     }
 
     private void ensureFilmExists(Integer filmId) {

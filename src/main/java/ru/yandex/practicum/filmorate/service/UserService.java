@@ -53,9 +53,7 @@ public class UserService {
     }
 
     public void addFriend(Integer userId, Integer friendId) {
-        if (Objects.equals(userId, friendId)) {
-            throw new ValidationException("Нельзя добавить самого себя в друзья");
-        }
+        ensureDifferentUsers(userId, friendId);
         ensureUserExists(userId);
         ensureUserExists(friendId);
         userStorage.addFriend(userId, friendId);
@@ -63,6 +61,7 @@ public class UserService {
     }
 
     public void removeFriend(Integer userId, Integer friendId) {
+        ensureDifferentUsers(userId, friendId);
         ensureUserExists(userId);
         ensureUserExists(friendId);
         userStorage.removeFriend(userId, friendId);
@@ -79,6 +78,7 @@ public class UserService {
     }
 
     public List<User> getCommonFriends(Integer userId, Integer otherId) {
+        ensureDifferentUsers(userId, otherId);
         ensureUserExists(userId);
         ensureUserExists(otherId);
         Set<Integer> a = userStorage.getFriendIds(userId);
@@ -94,6 +94,12 @@ public class UserService {
     private void ensureUserExists(Integer id) {
         if (userStorage.findById(id).isEmpty()) {
             throw new NotFoundException("Пользователь с id=" + id + " не найден");
+        }
+    }
+
+    private void ensureDifferentUsers(Integer userId, Integer otherUserId) {
+        if (Objects.equals(userId, otherUserId)) {
+            throw new ValidationException("Операция с одним и тем же пользователем недопустима");
         }
     }
 

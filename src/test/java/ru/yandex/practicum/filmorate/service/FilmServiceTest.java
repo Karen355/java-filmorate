@@ -20,6 +20,8 @@ import java.util.Optional;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.when;
 
@@ -62,13 +64,12 @@ class FilmServiceTest {
     @Test
     @DisplayName("getPopular: сортировка по числу лайков, затем по id")
     void getPopular_sortsByLikesThenId() {
-        when(filmStorage.findAll()).thenReturn(List.of(film1, film2));
-        when(filmStorage.getLikeCount(1)).thenReturn(1L);
-        when(filmStorage.getLikeCount(2)).thenReturn(5L);
+        when(filmStorage.getPopular(10)).thenReturn(List.of(film2, film1));
 
         List<Film> popular = filmService.getPopular(10);
 
         assertThat(popular).extracting(Film::getId).containsExactly(2, 1);
+        verify(filmStorage).getPopular(10);
     }
 
     @Test
@@ -76,6 +77,14 @@ class FilmServiceTest {
     void getPopular_negativeCount_throws() {
         assertThatThrownBy(() -> filmService.getPopular(-1))
                 .isInstanceOf(ValidationException.class);
+    }
+
+    @Test
+    @DisplayName("getPopular: count = 0 - пустой список, storage не вызывается")
+    void getPopular_zeroCount_returnsEmpty() {
+        List<Film> popular = filmService.getPopular(0);
+        assertThat(popular).isEmpty();
+        verify(filmStorage, never()).getPopular(anyInt());
     }
 
     @Test
