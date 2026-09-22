@@ -33,6 +33,10 @@ class FilmServiceTest {
     private FilmStorage filmStorage;
     @Mock
     private UserStorage userStorage;
+    @Mock
+    private GenreService genreService;
+    @Mock
+    private MpaService mpaService;
 
     @InjectMocks
     private FilmService filmService;

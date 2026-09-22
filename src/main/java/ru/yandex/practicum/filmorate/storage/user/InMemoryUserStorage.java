@@ -13,7 +13,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
- * In-memory реализация хранилища пользователей и дружбы (симметрично, id друзей в Set).
+ * In-memory реализация хранилища пользователей и односторонней дружбы (id друзей в Set).
  */
 @Component
 public class InMemoryUserStorage implements UserStorage {
@@ -39,15 +39,8 @@ public class InMemoryUserStorage implements UserStorage {
     @Override
     public void delete(Integer id) {
         users.remove(id);
-        Set<Integer> removedFriends = friends.remove(id);
-        if (removedFriends != null) {
-            for (Integer friendId : removedFriends) {
-                Set<Integer> friendSet = friends.get(friendId);
-                if (friendSet != null) {
-                    friendSet.remove(id);
-                }
-            }
-        }
+        friends.remove(id);
+        friends.values().forEach(friendIds -> friendIds.remove(id));
     }
 
     @Override
@@ -63,18 +56,13 @@ public class InMemoryUserStorage implements UserStorage {
     @Override
     public void addFriend(Integer userId, Integer friendId) {
         friends.computeIfAbsent(userId, k -> ConcurrentHashMap.newKeySet()).add(friendId);
-        friends.computeIfAbsent(friendId, k -> ConcurrentHashMap.newKeySet()).add(userId);
     }
 
     @Override
     public void removeFriend(Integer userId, Integer friendId) {
         Set<Integer> a = friends.get(userId);
-        Set<Integer> b = friends.get(friendId);
         if (a != null) {
             a.remove(friendId);
-        }
-        if (b != null) {
-            b.remove(userId);
         }
     }
 
