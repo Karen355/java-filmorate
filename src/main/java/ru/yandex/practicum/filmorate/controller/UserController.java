@@ -4,7 +4,9 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -40,9 +42,43 @@ public class UserController {
         return userService.update(user);
     }
 
+    @GetMapping("/{id}/friends/common/{otherId}")
+    public List<User> getCommonFriends(
+            @PathVariable Integer id,
+            @PathVariable Integer otherId) {
+        log.debug("Запрос на общих друзей: userId={}, otherId={}", id, otherId);
+        return userService.getCommonFriends(id, otherId);
+    }
+
+    @GetMapping("/{id}/friends")
+    public List<User> getFriends(@PathVariable Integer id) {
+        log.debug("Запрос на список друзей пользователя id={}", id);
+        return userService.getFriends(id);
+    }
+
+    @GetMapping("/{id}")
+    public User getUserById(@PathVariable Integer id) {
+        log.debug("Запрос на получение пользователя id={}", id);
+        return userService.findById(id);
+    }
+
     @GetMapping
     public List<User> getAllUsers() {
         log.debug("Запрос на получение списка всех пользователей");
         return userService.findAll();
+    }
+
+    @PutMapping("/{id}/friends/{friendId}")
+    @ResponseStatus(HttpStatus.OK)
+    public void addFriend(@PathVariable Integer id, @PathVariable Integer friendId) {
+        log.debug("Запрос на добавление в друзья: userId={}, friendId={}", id, friendId);
+        userService.addFriend(id, friendId);
+    }
+
+    @DeleteMapping("/{id}/friends/{friendId}")
+    @ResponseStatus(HttpStatus.OK)
+    public void removeFriend(@PathVariable Integer id, @PathVariable Integer friendId) {
+        log.debug("Запрос на удаление из друзей: userId={}, friendId={}", id, friendId);
+        userService.removeFriend(id, friendId);
     }
 }
