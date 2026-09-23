@@ -2,7 +2,6 @@ package ru.yandex.practicum.filmorate.service;
 
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 import ru.yandex.practicum.filmorate.exception.NotFoundException;
 import ru.yandex.practicum.filmorate.exception.ValidationException;
@@ -11,7 +10,6 @@ import ru.yandex.practicum.filmorate.storage.user.UserStorage;
 
 import java.util.List;
 import java.util.Objects;
-import java.util.Set;
 
 /**
  * Бизнес-логика для пользователей: CRUD, друзья.
@@ -23,7 +21,7 @@ public class UserService {
     private final UserStorage userStorage;
 
     @Autowired
-    public UserService(@Qualifier("userDbStorage") UserStorage userStorage) {
+    public UserService(UserStorage userStorage) {
         this.userStorage = userStorage;
     }
 
@@ -71,25 +69,14 @@ public class UserService {
 
     public List<User> getFriends(Integer userId) {
         ensureUserExists(userId);
-        return userStorage.getFriendIds(userId).stream()
-                .sorted()
-                .map(id -> userStorage.findById(id).orElse(null))
-                .filter(Objects::nonNull)
-                .toList();
+        return userStorage.getFriends(userId);
     }
 
     public List<User> getCommonFriends(Integer userId, Integer otherId) {
         ensureDifferentUsers(userId, otherId);
         ensureUserExists(userId);
         ensureUserExists(otherId);
-        Set<Integer> a = userStorage.getFriendIds(userId);
-        Set<Integer> b = userStorage.getFriendIds(otherId);
-        return a.stream()
-                .filter(b::contains)
-                .sorted()
-                .map(id -> userStorage.findById(id).orElse(null))
-                .filter(Objects::nonNull)
-                .toList();
+        return userStorage.getCommonFriends(userId, otherId);
     }
 
     private void ensureUserExists(Integer id) {

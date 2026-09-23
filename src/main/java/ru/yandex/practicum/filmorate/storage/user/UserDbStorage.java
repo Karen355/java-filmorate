@@ -10,11 +10,9 @@ import ru.yandex.practicum.filmorate.model.User;
 import ru.yandex.practicum.filmorate.storage.mapper.UserRowMapper;
 
 import java.sql.PreparedStatement;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.Set;
 
 @Repository
 @RequiredArgsConstructor
@@ -78,8 +76,27 @@ public class UserDbStorage implements UserStorage {
     }
 
     @Override
-    public Set<Integer> getFriendIds(Integer userId) {
-        return new HashSet<>(jdbcTemplate.queryForList(
-                "SELECT friend_id FROM friendships WHERE user_id = ?", Integer.class, userId));
+    public List<User> getFriends(Integer userId) {
+        String sql = """
+                SELECT u.id, u.email, u.login, u.name, u.birthday
+                FROM users u
+                JOIN friendships f ON f.friend_id = u.id
+                WHERE f.user_id = ?
+                ORDER BY u.id
+                """;
+        return jdbcTemplate.query(sql, rowMapper, userId);
+    }
+
+    @Override
+    public List<User> getCommonFriends(Integer userId, Integer otherId) {
+        String sql = """
+                SELECT u.id, u.email, u.login, u.name, u.birthday
+                FROM users u
+                JOIN friendships first_friend ON first_friend.friend_id = u.id
+                JOIN friendships second_friend ON second_friend.friend_id = u.id
+                WHERE first_friend.user_id = ? AND second_friend.user_id = ?
+                ORDER BY u.id
+                """;
+        return jdbcTemplate.query(sql, rowMapper, userId, otherId);
     }
 }

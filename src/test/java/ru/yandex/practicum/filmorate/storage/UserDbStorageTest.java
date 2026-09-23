@@ -66,7 +66,7 @@ class UserDbStorageTest {
         userStorage.update(updated);
 
         assertThat(userStorage.findById(first.getId())).contains(updated);
-        assertThat(userStorage.getFriendIds(first.getId())).containsExactly(second.getId());
+        assertThat(userStorage.getFriends(first.getId())).containsExactly(second);
         assertThat(userStorage.findById(second.getId())).contains(second);
     }
 
@@ -88,13 +88,13 @@ class UserDbStorageTest {
         userStorage.addFriend(first.getId(), second.getId());
         userStorage.addFriend(first.getId(), second.getId());
 
-        assertThat(userStorage.getFriendIds(first.getId())).containsExactly(second.getId());
-        assertThat(userStorage.getFriendIds(second.getId())).isEmpty();
+        assertThat(userStorage.getFriends(first.getId())).containsExactly(second);
+        assertThat(userStorage.getFriends(second.getId())).isEmpty();
 
         userStorage.addFriend(second.getId(), first.getId());
 
-        assertThat(userStorage.getFriendIds(first.getId())).containsExactly(second.getId());
-        assertThat(userStorage.getFriendIds(second.getId())).containsExactly(first.getId());
+        assertThat(userStorage.getFriends(first.getId())).containsExactly(second);
+        assertThat(userStorage.getFriends(second.getId())).containsExactly(first);
     }
 
     @Test
@@ -108,8 +108,8 @@ class UserDbStorageTest {
         userStorage.removeFriend(first.getId(), second.getId());
         userStorage.removeFriend(first.getId(), second.getId());
 
-        assertThat(userStorage.getFriendIds(first.getId())).isEmpty();
-        assertThat(userStorage.getFriendIds(second.getId())).containsExactly(first.getId());
+        assertThat(userStorage.getFriends(first.getId())).isEmpty();
+        assertThat(userStorage.getFriends(second.getId())).containsExactly(first);
     }
 
     @Test
@@ -126,10 +126,66 @@ class UserDbStorageTest {
         userStorage.delete(first.getId());
 
         assertThat(userStorage.findById(first.getId())).isEmpty();
-        assertThat(userStorage.getFriendIds(first.getId())).isEmpty();
-        assertThat(userStorage.getFriendIds(third.getId())).isEmpty();
-        assertThat(userStorage.getFriendIds(second.getId())).containsExactly(third.getId());
+        assertThat(userStorage.getFriends(first.getId())).isEmpty();
+        assertThat(userStorage.getFriends(third.getId())).isEmpty();
+        assertThat(userStorage.getFriends(second.getId())).containsExactly(third);
         assertThat(userStorage.findAll()).containsExactly(second, third);
+    }
+
+    @Test
+    @DisplayName("getFriends: возвращает объекты друзей по id и не включает входящие заявки")
+    void getFriends_returnsOutgoingFriendsInIdOrder() {
+        User owner = userStorage.create(user("owner"));
+        User first = userStorage.create(user("first"));
+        User second = userStorage.create(user("second"));
+        User incoming = userStorage.create(user("incoming"));
+        assertThat(userStorage.getFriends(owner.getId())).isEmpty();
+        userStorage.addFriend(owner.getId(), second.getId());
+        userStorage.addFriend(owner.getId(), first.getId());
+        userStorage.addFriend(incoming.getId(), owner.getId());
+
+        assertThat(userStorage.getFriends(owner.getId())).containsExactly(first, second);
+    }
+
+    @Test
+    @DisplayName("getCommonFriends: общие исходящие друзья без дублей по возрастанию id")
+    void getCommonFriends_returnsOnlyCommonOutgoingFriendsInIdOrder() {
+        User first = userStorage.create(user("first"));
+        User second = userStorage.create(user("second"));
+        User commonFirst = userStorage.create(user("commonFirst"));
+        User commonSecond = userStorage.create(user("commonSecond"));
+        User onlyFirst = userStorage.create(user("onlyFirst"));
+        User onlySecond = userStorage.create(user("onlySecond"));
+        User incoming = userStorage.create(user("incoming"));
+        userStorage.addFriend(first.getId(), commonSecond.getId());
+        userStorage.addFriend(second.getId(), commonSecond.getId());
+        userStorage.addFriend(first.getId(), commonFirst.getId());
+        userStorage.addFriend(second.getId(), commonFirst.getId());
+        userStorage.addFriend(first.getId(), commonFirst.getId());
+        userStorage.addFriend(first.getId(), onlyFirst.getId());
+        userStorage.addFriend(second.getId(), onlySecond.getId());
+        userStorage.addFriend(incoming.getId(), first.getId());
+        userStorage.addFriend(incoming.getId(), second.getId());
+
+        assertThat(userStorage.getCommonFriends(first.getId(), second.getId()))
+                .containsExactly(commonFirst, commonSecond);
+        assertThat(userStorage.getCommonFriends(second.getId(), first.getId()))
+                .containsExactly(commonFirst, commonSecond);
+    }
+
+    @Test
+    @DisplayName("getCommonFriends: пустой список, если нет друзей или пересечения")
+    void getCommonFriends_withoutCommonFriends_returnsEmpty() {
+        User first = userStorage.create(user("first"));
+        User second = userStorage.create(user("second"));
+        User onlyFirst = userStorage.create(user("onlyFirst"));
+        User onlySecond = userStorage.create(user("onlySecond"));
+        assertThat(userStorage.getCommonFriends(first.getId(), second.getId())).isEmpty();
+        userStorage.addFriend(first.getId(), onlyFirst.getId());
+        assertThat(userStorage.getCommonFriends(first.getId(), second.getId())).isEmpty();
+        userStorage.addFriend(second.getId(), onlySecond.getId());
+
+        assertThat(userStorage.getCommonFriends(first.getId(), second.getId())).isEmpty();
     }
 
     private User user(String login) {

@@ -4,7 +4,6 @@ import ru.yandex.practicum.filmorate.model.User;
 
 import java.util.List;
 import java.util.Optional;
-import java.util.Set;
 
 /**
  * Хранилище пользователей и связей дружбы.
@@ -25,5 +24,7 @@ public interface UserStorage {
 
     void removeFriend(Integer userId, Integer friendId);
 
-    Set<Integer> getFriendIds(Integer userId);
+    List<User> getFriends(Integer userId);
+
+    List<User> getCommonFriends(Integer userId, Integer otherId);
 }
