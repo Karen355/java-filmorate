@@ -10,10 +10,12 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -21,6 +23,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 @SpringBootTest
 @AutoConfigureMockMvc
+@Transactional
 @DisplayName("UserController")
 class UserControllerTest {
 
@@ -203,6 +206,22 @@ class UserControllerTest {
         mockMvc.perform(get("/users/" + id1 + "/friends"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[0].id").value(id2));
+        mockMvc.perform(get("/users/" + id2 + "/friends"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$").isEmpty());
+        mockMvc.perform(put("/users/" + id2 + "/friends/" + id1))
+                .andExpect(status().isOk());
+        mockMvc.perform(get("/users/" + id2 + "/friends"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].id").value(id1));
+        mockMvc.perform(delete("/users/" + id1 + "/friends/" + id2))
+                .andExpect(status().isOk());
+        mockMvc.perform(get("/users/" + id1 + "/friends"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$").isEmpty());
+        mockMvc.perform(get("/users/" + id2 + "/friends"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].id").value(id1));
     }
 
     @Test

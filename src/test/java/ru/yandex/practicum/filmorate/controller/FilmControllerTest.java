@@ -10,6 +10,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
+import org.springframework.transaction.annotation.Transactional;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -19,6 +20,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 @SpringBootTest
 @AutoConfigureMockMvc
+@Transactional
 @DisplayName("FilmController")
 class FilmControllerTest {
 
@@ -36,7 +38,8 @@ class FilmControllerTest {
                 "name", "Фильм",
                 "description", "Описание",
                 "releaseDate", "1990-01-01",
-                "duration", 120
+                "duration", 120,
+                "mpa", java.util.Map.of("id", 1)
         ));
     }
 
@@ -59,7 +62,8 @@ class FilmControllerTest {
                 "name", "",
                 "description", "Описание",
                 "releaseDate", "1990-01-01",
-                "duration", 120
+                "duration", 120,
+                "mpa", java.util.Map.of("id", 1)
         ));
         mockMvc.perform(post("/films")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -75,7 +79,8 @@ class FilmControllerTest {
                 "name", "Фильм",
                 "description", longDesc,
                 "releaseDate", "1990-01-01",
-                "duration", 120
+                "duration", 120,
+                "mpa", java.util.Map.of("id", 1)
         ));
         mockMvc.perform(post("/films")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -90,7 +95,8 @@ class FilmControllerTest {
                 "name", "Фильм",
                 "description", "Описание",
                 "releaseDate", "1895-12-27",
-                "duration", 120
+                "duration", 120,
+                "mpa", java.util.Map.of("id", 1)
         ));
         mockMvc.perform(post("/films")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -105,7 +111,8 @@ class FilmControllerTest {
                 "name", "Фильм",
                 "description", "Описание",
                 "releaseDate", "1990-01-01",
-                "duration", 0
+                "duration", 0,
+                "mpa", java.util.Map.of("id", 1)
         ));
         mockMvc.perform(post("/films")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -185,7 +192,8 @@ class FilmControllerTest {
                 "name", "Фильм",
                 "description", "Описание",
                 "releaseDate", "1990-01-01",
-                "duration", 120
+                "duration", 120,
+                "mpa", java.util.Map.of("id", 1)
         ));
         mockMvc.perform(put("/films")
                         .contentType(MediaType.APPLICATION_JSON)
