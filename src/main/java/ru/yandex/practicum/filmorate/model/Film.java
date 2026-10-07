@@ -1,5 +1,6 @@
 package ru.yandex.practicum.filmorate.model;
 
+import com.fasterxml.jackson.annotation.JsonAlias;
 import com.fasterxml.jackson.annotation.JsonSetter;
 import com.fasterxml.jackson.annotation.Nulls;
 import jakarta.validation.Valid;
@@ -49,4 +50,10 @@ public class Film {
     @Builder.Default
     @JsonSetter(nulls = Nulls.AS_EMPTY)
     private List<@NotNull @Valid Genre> genres = new ArrayList<>();
+
+    @Builder.Default
+    // В ТЗ используется director, в тестах PR - directors.
+    @JsonAlias("director")
+    @JsonSetter(nulls = Nulls.AS_EMPTY)
+    private List<@NotNull Director> directors = new ArrayList<>();
 }
