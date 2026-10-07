@@ -12,6 +12,7 @@ import ru.yandex.practicum.filmorate.model.Genre;
 import ru.yandex.practicum.filmorate.storage.mapper.FilmRowMapper;
 
 import java.sql.PreparedStatement;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -108,14 +109,27 @@ public class FilmDbStorage implements FilmStorage {
     }
 
     @Override
-    public List<Film> getPopular(int count) {
+    public List<Film> getPopular(int count, Integer genreId, Integer year) {
+        List<String> conditions = new ArrayList<>();
+        List<Object> parameters = new ArrayList<>();
+        if (genreId != null) {
+            conditions.add("EXISTS (SELECT 1 FROM film_genres fg WHERE fg.film_id = f.id AND fg.genre_id = ?)");
+            parameters.add(genreId);
+        }
+        if (year != null) {
+            conditions.add("EXTRACT(YEAR FROM f.release_date) = ?");
+            parameters.add(year);
+        }
+        String where = conditions.isEmpty() ? "" : "WHERE " + String.join(" AND ", conditions) + "\n";
         String sql = SELECT_FILMS + """
                 LEFT JOIN (SELECT film_id, COUNT(*) AS like_count FROM film_likes GROUP BY film_id) likes
                     ON likes.film_id = f.id
+                """ + where + """
                 ORDER BY COALESCE(likes.like_count, 0) DESC, f.id
                 LIMIT ?
                 """;
-        List<Film> films = jdbcTemplate.query(sql, rowMapper, count);
+        parameters.add(count);
+        List<Film> films = jdbcTemplate.query(sql, rowMapper, parameters.toArray());
         loadGenres(films);
         return films;
     }

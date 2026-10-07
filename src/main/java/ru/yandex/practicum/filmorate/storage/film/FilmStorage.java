@@ -26,5 +26,11 @@ public interface FilmStorage {
 
     long getLikeCount(Integer filmId);
 
-    List<Film> getPopular(int count);
+    /**
+     * Самые популярные фильмы по числу лайков.
+     *
+     * @param genreId жанр для фильтрации, {@code null} - без фильтра по жанру
+     * @param year    год релиза для фильтрации, {@code null} - без фильтра по году
+     */
+    List<Film> getPopular(int count, Integer genreId, Integer year);
 }
