@@ -50,6 +50,12 @@ public class FilmController {
         return filmService.getPopular(count);
     }
 
+    @GetMapping("/common")
+    public List<Film> getCommonFilms(@RequestParam Integer userId, @RequestParam Integer friendId) {
+        log.debug("Запрос на общие фильмы: userId={}, friendId={}", userId, friendId);
+        return filmService.getCommonFilms(userId, friendId);
+    }
+
     @GetMapping("/{id}")
     public Film getFilmById(@PathVariable Integer id) {
         log.debug("Запрос на получение фильма id={}", id);

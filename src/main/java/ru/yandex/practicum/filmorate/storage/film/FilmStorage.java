@@ -27,4 +27,6 @@ public interface FilmStorage {
     long getLikeCount(Integer filmId);
 
     List<Film> getPopular(int count);
+
+    List<Film> getCommonFilms(Integer userId, Integer friendId);
 }

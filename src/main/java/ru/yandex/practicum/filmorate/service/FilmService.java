@@ -91,6 +91,12 @@ public class FilmService {
         return filmStorage.getPopular(count);
     }
 
+    public List<Film> getCommonFilms(Integer userId, Integer friendId) {
+        ensureUserExists(userId);
+        ensureUserExists(friendId);
+        return filmStorage.getCommonFilms(userId, friendId);
+    }
+
     private void ensureFilmExists(Integer filmId) {
         if (filmStorage.findById(filmId).isEmpty()) {
             throw new NotFoundException("Фильм с id=" + filmId + " не найден");

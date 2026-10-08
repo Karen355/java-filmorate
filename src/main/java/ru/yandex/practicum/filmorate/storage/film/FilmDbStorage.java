@@ -120,6 +120,20 @@ public class FilmDbStorage implements FilmStorage {
         return films;
     }
 
+    @Override
+    public List<Film> getCommonFilms(Integer userId, Integer friendId) {
+        String sql = SELECT_FILMS + """
+                JOIN film_likes user_likes ON user_likes.film_id = f.id AND user_likes.user_id = ?
+                JOIN film_likes friend_likes ON friend_likes.film_id = f.id AND friend_likes.user_id = ?
+                LEFT JOIN (SELECT film_id, COUNT(*) AS like_count FROM film_likes GROUP BY film_id) likes
+                    ON likes.film_id = f.id
+                ORDER BY COALESCE(likes.like_count, 0) DESC, f.id
+                """;
+        List<Film> films = jdbcTemplate.query(sql, rowMapper, userId, friendId);
+        loadGenres(films);
+        return films;
+    }
+
     private void saveGenres(Film film) {
         if (film.getGenres() == null || film.getGenres().isEmpty()) {
             return;
