@@ -62,6 +62,13 @@ public class UserController {
         return userService.findById(id);
     }
 
+    @DeleteMapping("/{id}")
+    @ResponseStatus(HttpStatus.OK)
+    public void deleteUser(@PathVariable Integer id) {
+        log.debug("Запрос на удаление пользователя id={}", id);
+        userService.delete(id);
+    }
+
     @GetMapping
     public List<User> getAllUsers() {
         log.debug("Запрос на получение списка всех пользователей");

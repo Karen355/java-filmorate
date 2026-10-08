@@ -54,6 +54,11 @@ public class FilmService {
         return film;
     }
 
+    public void delete(Integer id) {
+        filmStorage.delete(id);
+        log.info("Удалён фильм: id={}", id);
+    }
+
     public List<Film> findAll() {
         return filmStorage.findAll();
     }

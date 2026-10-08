@@ -280,4 +280,27 @@ class UserControllerTest {
         mockMvc.perform(put("/users/" + id + "/friends/" + id))
                 .andExpect(status().isBadRequest());
     }
+
+    @Test
+    @DisplayName("DELETE /users/{id} - удаление пользователя")
+    void deleteUser_removesUser() throws Exception {
+        MvcResult result = mockMvc.perform(post("/users")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(validUserJson()))
+                .andExpect(status().isCreated())
+                .andReturn();
+
+        int id = objectMapper.readTree(
+                result.getResponse().getContentAsString()
+        ).get("id").asInt();
+
+        mockMvc.perform(delete("/users/" + id))
+                .andExpect(status().isOk());
+
+        mockMvc.perform(get("/users/" + id))
+                .andExpect(status().isNotFound());
+
+        mockMvc.perform(delete("/users/" + id))
+                .andExpect(status().isOk());
+    }
 }

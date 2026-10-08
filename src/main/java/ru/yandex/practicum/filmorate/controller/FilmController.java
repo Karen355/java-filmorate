@@ -56,6 +56,12 @@ public class FilmController {
         return filmService.findById(id);
     }
 
+    @DeleteMapping("/{id}")
+    @ResponseStatus(HttpStatus.OK)
+    public void deleteFilm(@PathVariable Integer id) {
+        filmService.delete(id);
+    }
+
     @GetMapping
     public List<Film> getAllFilms() {
         log.debug("Запрос на получение списка всех фильмов");
