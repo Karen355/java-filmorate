@@ -7,6 +7,8 @@ import ru.yandex.practicum.filmorate.exception.NotFoundException;
 import ru.yandex.practicum.filmorate.exception.ValidationException;
 import ru.yandex.practicum.filmorate.model.User;
 import ru.yandex.practicum.filmorate.storage.user.UserStorage;
+import ru.yandex.practicum.filmorate.model.Film;
+import ru.yandex.practicum.filmorate.storage.film.FilmStorage;
 
 import java.util.List;
 import java.util.Objects;
@@ -19,10 +21,12 @@ import java.util.Objects;
 public class UserService {
 
     private final UserStorage userStorage;
+    private final FilmStorage filmStorage;
 
     @Autowired
-    public UserService(UserStorage userStorage) {
+    public UserService(UserStorage userStorage, FilmStorage filmStorage) {
         this.userStorage = userStorage;
+        this.filmStorage = filmStorage;
     }
 
     public User create(User user) {
@@ -96,4 +100,10 @@ public class UserService {
             user.setName(user.getLogin());
         }
     }
+
+    public List<Film> getRecommendations(Integer userId) {
+        ensureUserExists(userId);
+        return filmStorage.getRecommendations(userId);
+    }
+
 }

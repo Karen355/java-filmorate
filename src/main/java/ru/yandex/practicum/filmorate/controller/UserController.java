@@ -13,6 +13,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
+import ru.yandex.practicum.filmorate.model.Film;
 import ru.yandex.practicum.filmorate.model.User;
 import ru.yandex.practicum.filmorate.service.UserService;
 
@@ -80,5 +81,11 @@ public class UserController {
     public void removeFriend(@PathVariable Integer id, @PathVariable Integer friendId) {
         log.debug("Запрос на удаление из друзей: userId={}, friendId={}", id, friendId);
         userService.removeFriend(id, friendId);
+    }
+
+    @GetMapping("/{id}/recommendations")
+    public List<Film> getRecommendations(@PathVariable Integer id) {
+        log.debug("Запрос рекомендаций для пользователя id={}", id);
+        return userService.getRecommendations(id);
     }
 }
