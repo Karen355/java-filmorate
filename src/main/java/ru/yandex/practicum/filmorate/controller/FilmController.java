@@ -50,6 +50,12 @@ public class FilmController {
         return filmService.getPopular(count);
     }
 
+    @GetMapping("/director/{directorId}")
+    public List<Film> getFilmsByDirector(@PathVariable Integer directorId, @RequestParam String sortBy) {
+        log.debug("Запрос на фильмы режиссёра id={}, sortBy={}", directorId, sortBy);
+        return filmService.findByDirector(directorId, sortBy);
+    }
+
     @GetMapping("/{id}")
     public Film getFilmById(@PathVariable Integer id) {
         log.debug("Запрос на получение фильма id={}", id);
