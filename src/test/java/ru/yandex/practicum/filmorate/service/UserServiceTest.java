@@ -8,7 +8,11 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import ru.yandex.practicum.filmorate.exception.NotFoundException;
 import ru.yandex.practicum.filmorate.exception.ValidationException;
+import ru.yandex.practicum.filmorate.model.EventType;
+import ru.yandex.practicum.filmorate.model.FeedEvent;
+import ru.yandex.practicum.filmorate.model.Operation;
 import ru.yandex.practicum.filmorate.model.User;
+import ru.yandex.practicum.filmorate.storage.feed.FeedStorage;
 import ru.yandex.practicum.filmorate.storage.user.UserStorage;
 
 import java.time.LocalDate;
@@ -28,6 +32,8 @@ class UserServiceTest {
 
     @Mock
     private UserStorage userStorage;
+    @Mock
+    private FeedStorage feedStorage;
 
     @InjectMocks
     private UserService userService;
@@ -49,6 +55,7 @@ class UserServiceTest {
         userService.addFriend(1, 2);
 
         verify(userStorage).addFriend(1, 2);
+        verify(feedStorage).addEvent(1, EventType.FRIEND, Operation.ADD, 2);
     }
 
     @Test
@@ -120,6 +127,25 @@ class UserServiceTest {
 
         assertThatThrownBy(() -> userService.getCommonFriends(1, 2)).isInstanceOf(NotFoundException.class);
         verify(userStorage, never()).getCommonFriends(1, 2);
+    }
+
+    @Test
+    @DisplayName("getFeed: возвращает ленту пользователя")
+    void getFeed_returnsUserFeed() {
+        FeedEvent event = FeedEvent.builder()
+                .eventId(1)
+                .timestamp(100L)
+                .userId(1)
+                .eventType(EventType.FRIEND)
+                .operation(Operation.ADD)
+                .entityId(2)
+                .build();
+        when(userStorage.findById(1)).thenReturn(Optional.of(user(1)));
+        when(feedStorage.getFeed(1)).thenReturn(List.of(event));
+
+        assertThat(userService.getFeed(1)).containsExactly(event);
+        verify(userStorage).findById(1);
+        verify(feedStorage).getFeed(1);
     }
 
     private static User user(int id) {
