@@ -11,8 +11,10 @@ import ru.yandex.practicum.filmorate.model.Genre;
 import ru.yandex.practicum.filmorate.storage.film.FilmStorage;
 import ru.yandex.practicum.filmorate.storage.user.UserStorage;
 
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.TreeMap;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -100,6 +102,20 @@ public class FilmService {
         }
         directorService.findById(directorId);
         return filmStorage.findByDirector(directorId, sortBy);
+    }
+
+    public List<Film> search(String query, String by) {
+        Set<String> fields = Arrays.stream(by.split(",", -1))
+                .map(String::trim)
+                .collect(Collectors.toSet());
+        if (fields.stream().anyMatch(field -> !field.equals("title") && !field.equals("director"))) {
+            throw new ValidationException("Параметр by должен содержать title или director");
+        }
+        String searchQuery = query.strip();
+        if (searchQuery.isEmpty()) {
+            return List.of();
+        }
+        return filmStorage.search(searchQuery, fields.contains("title"), fields.contains("director"));
     }
 
     private void ensureFilmExists(Integer filmId) {

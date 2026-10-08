@@ -144,6 +144,25 @@ public class FilmDbStorage implements FilmStorage {
         return films;
     }
 
+    @Override
+    public List<Film> search(String query, boolean byTitle, boolean byDirector) {
+        String sql = SELECT_FILMS + """
+                LEFT JOIN (SELECT film_id, COUNT(*) AS like_count FROM film_likes GROUP BY film_id) likes
+                    ON likes.film_id = f.id
+                WHERE (? = TRUE AND LOCATE(LOWER(?), LOWER(f.name)) > 0)
+                    OR (? = TRUE AND EXISTS (
+                        SELECT 1 FROM film_directors fd
+                        JOIN directors d ON d.id = fd.director_id
+                        WHERE fd.film_id = f.id AND LOCATE(LOWER(?), LOWER(d.name)) > 0
+                    ))
+                ORDER BY COALESCE(likes.like_count, 0) DESC, f.id
+                """;
+        List<Film> films = jdbcTemplate.query(sql, rowMapper, byTitle, query, byDirector, query);
+        loadGenres(films);
+        loadDirectors(films);
+        return films;
+    }
+
     private void saveGenres(Film film) {
         if (film.getGenres() == null || film.getGenres().isEmpty()) {
             return;
