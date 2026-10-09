@@ -52,6 +52,12 @@ public class FilmController {
         return filmService.getPopular(count, genreId, year);
     }
 
+    @GetMapping("/common")
+    public List<Film> getCommonFilms(@RequestParam Integer userId, @RequestParam Integer friendId) {
+        log.debug("Запрос на общие фильмы: userId={}, friendId={}", userId, friendId);
+        return filmService.getCommonFilms(userId, friendId);
+    }
+
     @GetMapping("/search")
     public List<Film> searchFilms(@RequestParam String query, @RequestParam String by) {
         log.debug("Запрос на поиск фильмов: query={}, by={}", query, by);
