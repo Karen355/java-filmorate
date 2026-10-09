@@ -31,6 +31,6 @@ public interface FilmStorage {
     List<Film> findByDirector(Integer directorId, String sortBy);
 
     List<Film> getRecommendations(Integer userId);
-  
+    
     List<Film> search(String query, boolean byTitle, boolean byDirector);
 }
