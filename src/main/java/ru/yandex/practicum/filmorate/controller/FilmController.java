@@ -55,19 +55,19 @@ public class FilmController {
         log.debug("Запрос на общие фильмы: userId={}, friendId={}", userId, friendId);
         return filmService.getCommonFilms(userId, friendId);
     }
-  
+    
     @GetMapping("/search")
     public List<Film> searchFilms(@RequestParam String query, @RequestParam String by) {
         log.debug("Запрос на поиск фильмов: query={}, by={}", query, by);
         return filmService.search(query, by);
     }
-
+    
     @GetMapping("/director/{directorId}")
     public List<Film> getFilmsByDirector(@PathVariable Integer directorId, @RequestParam String sortBy) {
         log.debug("Запрос на фильмы режиссёра id={}, sortBy={}", directorId, sortBy);
         return filmService.findByDirector(directorId, sortBy);
     }
-
+    
     @GetMapping("/{id}")
     public Film getFilmById(@PathVariable Integer id) {
         log.debug("Запрос на получение фильма id={}", id);
