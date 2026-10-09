@@ -96,13 +96,20 @@ public class FilmService {
         return filmStorage.getPopular(count);
     }
 
-    public List<Film> findByDirector(Integer directorId, String sortBy) {
-        if (!"year".equals(sortBy) && !"likes".equals(sortBy)) {
-            throw new ValidationException("Параметр sortBy должен быть year или likes");
-        }
-        directorService.findById(directorId);
-        return filmStorage.findByDirector(directorId, sortBy);
+    public List<Film> getCommonFilms(Integer userId, Integer friendId) {
+    ensureUserExists(userId);
+    ensureUserExists(friendId);
+    return filmStorage.getCommonFilms(userId, friendId);
+}
+
+public List<Film> findByDirector(Integer directorId, String sortBy) {
+    if (!"year".equals(sortBy) && !"likes".equals(sortBy)) {
+        throw new ValidationException("Параметр sortBy должен быть year или likes");
     }
+
+    directorService.findById(directorId);
+    return filmStorage.findByDirector(directorId, sortBy);
+}
 
     public List<Film> search(String query, String by) {
         Set<String> fields = Arrays.stream(by.split(",", -1))
