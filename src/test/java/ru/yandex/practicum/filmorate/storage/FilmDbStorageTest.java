@@ -156,6 +156,34 @@ class FilmDbStorageTest {
     }
 
     @Test
+    @DisplayName("getCommonFilms: общие лайкнутые фильмы отсортированы по популярности")
+    void getCommonFilms_returnsIntersectionSortedByPopularity() {
+        Film lower = filmStorage.create(film("Lower"));
+        Film higher = film("Higher");
+        higher.setGenres(List.of(new Genre(1, null)));
+        filmStorage.create(higher);
+        Film onlyFirst = filmStorage.create(film("Only first"));
+        User first = userStorage.create(user("first"));
+        User second = userStorage.create(user("second"));
+        User third = userStorage.create(user("third"));
+
+        filmStorage.addLike(lower.getId(), first.getId());
+        filmStorage.addLike(lower.getId(), second.getId());
+        filmStorage.addLike(higher.getId(), first.getId());
+        filmStorage.addLike(higher.getId(), second.getId());
+        filmStorage.addLike(higher.getId(), third.getId());
+        filmStorage.addLike(onlyFirst.getId(), first.getId());
+        filmStorage.addLike(onlyFirst.getId(), third.getId());
+
+        List<Film> commonFilms = filmStorage.getCommonFilms(first.getId(), second.getId());
+
+        assertThat(commonFilms).extracting(Film::getId)
+                .containsExactly(higher.getId(), lower.getId());
+        assertThat(commonFilms.getFirst().getGenres())
+                .containsExactly(new Genre(1, "Комедия"));
+    }
+
+    @Test
     @DisplayName("delete: удаляет фильм, жанры и лайки, сохраняет пользователя")
     void delete_cascadesToGenresAndLikes() {
         Film film = film("Film");

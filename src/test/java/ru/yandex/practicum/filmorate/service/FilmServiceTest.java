@@ -37,6 +37,8 @@ class FilmServiceTest {
     private GenreService genreService;
     @Mock
     private MpaService mpaService;
+    @Mock
+    private DirectorService directorService;
 
     @InjectMocks
     private FilmService filmService;
@@ -89,6 +91,29 @@ class FilmServiceTest {
         List<Film> popular = filmService.getPopular(0);
         assertThat(popular).isEmpty();
         verify(filmStorage, never()).getPopular(anyInt());
+    }
+
+    @Test
+    @DisplayName("getCommonFilms: проверяет пользователей и возвращает результат хранилища")
+    void getCommonFilms_returnsFilmsFromStorage() {
+        when(filmStorage.getCommonFilms(1, 2)).thenReturn(List.of(film2, film1));
+
+        List<Film> commonFilms = filmService.getCommonFilms(1, 2);
+
+        assertThat(commonFilms).extracting(Film::getId).containsExactly(2, 1);
+        verify(userStorage).findById(1);
+        verify(userStorage).findById(2);
+        verify(filmStorage).getCommonFilms(1, 2);
+    }
+
+    @Test
+    @DisplayName("getCommonFilms: неизвестный пользователь - NotFoundException")
+    void getCommonFilms_unknownUser_throws() {
+        when(userStorage.findById(99)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> filmService.getCommonFilms(99, 1))
+                .isInstanceOf(NotFoundException.class);
+        verify(filmStorage, never()).getCommonFilms(anyInt(), anyInt());
     }
 
     @Test
