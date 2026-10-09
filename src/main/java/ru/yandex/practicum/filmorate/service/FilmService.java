@@ -76,16 +76,18 @@ public class FilmService {
     public void addLike(Integer filmId, Integer userId) {
         ensureFilmExists(filmId);
         ensureUserExists(userId);
-        filmStorage.addLike(filmId, userId);
-        feedStorage.addEvent(userId, EventType.LIKE, Operation.ADD, filmId);
+        if (filmStorage.addLike(filmId, userId)) {
+            feedStorage.addEvent(userId, EventType.LIKE, Operation.ADD, filmId);
+        }
         log.info("Пользователь id={} поставил лайк фильму id={}", userId, filmId);
     }
 
     public void removeLike(Integer filmId, Integer userId) {
         ensureFilmExists(filmId);
         ensureUserExists(userId);
-        filmStorage.removeLike(filmId, userId);
-        feedStorage.addEvent(userId, EventType.LIKE, Operation.REMOVE, filmId);
+        if (filmStorage.removeLike(filmId, userId)) {
+            feedStorage.addEvent(userId, EventType.LIKE, Operation.REMOVE, filmId);
+        }
         log.info("Пользователь id={} убрал лайк с фильма id={}", userId, filmId);
     }
 

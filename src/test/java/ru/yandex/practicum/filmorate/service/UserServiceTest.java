@@ -51,6 +51,7 @@ class UserServiceTest {
     void addFriend_ok_callsStorage() {
         when(userStorage.findById(1)).thenReturn(Optional.of(user(1)));
         when(userStorage.findById(2)).thenReturn(Optional.of(user(2)));
+        when(userStorage.addFriend(1, 2)).thenReturn(true);
 
         userService.addFriend(1, 2);
 
@@ -59,11 +60,37 @@ class UserServiceTest {
     }
 
     @Test
+    @DisplayName("addFriend: повторное добавление не записывает событие в ленту")
+    void addFriend_withoutStateChange_doesNotRecordFeedEvent() {
+        when(userStorage.findById(1)).thenReturn(Optional.of(user(1)));
+        when(userStorage.findById(2)).thenReturn(Optional.of(user(2)));
+        when(userStorage.addFriend(1, 2)).thenReturn(false);
+
+        userService.addFriend(1, 2);
+
+        verify(userStorage).addFriend(1, 2);
+        verify(feedStorage, never()).addEvent(1, EventType.FRIEND, Operation.ADD, 2);
+    }
+
+    @Test
     @DisplayName("removeFriend: нельзя удалить самого себя из друзей")
     void removeFriend_self_throwsValidationException() {
         assertThatThrownBy(() -> userService.removeFriend(1, 1))
                 .isInstanceOf(ValidationException.class);
         verify(userStorage, never()).removeFriend(1, 1);
+    }
+
+    @Test
+    @DisplayName("removeFriend: удаление отсутствующей дружбы не записывает событие в ленту")
+    void removeFriend_withoutStateChange_doesNotRecordFeedEvent() {
+        when(userStorage.findById(1)).thenReturn(Optional.of(user(1)));
+        when(userStorage.findById(2)).thenReturn(Optional.of(user(2)));
+        when(userStorage.removeFriend(1, 2)).thenReturn(false);
+
+        userService.removeFriend(1, 2);
+
+        verify(userStorage).removeFriend(1, 2);
+        verify(feedStorage, never()).addEvent(1, EventType.FRIEND, Operation.REMOVE, 2);
     }
 
     @Test

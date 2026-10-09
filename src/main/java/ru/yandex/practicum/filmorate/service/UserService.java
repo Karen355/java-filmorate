@@ -61,8 +61,9 @@ public class UserService {
         ensureDifferentUsers(userId, friendId);
         ensureUserExists(userId);
         ensureUserExists(friendId);
-        userStorage.addFriend(userId, friendId);
-        feedStorage.addEvent(userId, EventType.FRIEND, Operation.ADD, friendId);
+        if (userStorage.addFriend(userId, friendId)) {
+            feedStorage.addEvent(userId, EventType.FRIEND, Operation.ADD, friendId);
+        }
         log.info("Пользователь id={} добавил в друзья id={}", userId, friendId);
     }
 
@@ -70,8 +71,9 @@ public class UserService {
         ensureDifferentUsers(userId, friendId);
         ensureUserExists(userId);
         ensureUserExists(friendId);
-        userStorage.removeFriend(userId, friendId);
-        feedStorage.addEvent(userId, EventType.FRIEND, Operation.REMOVE, friendId);
+        if (userStorage.removeFriend(userId, friendId)) {
+            feedStorage.addEvent(userId, EventType.FRIEND, Operation.REMOVE, friendId);
+        }
         log.info("Пользователь id={} удалил из друзей id={}", userId, friendId);
     }
 
