@@ -301,6 +301,6 @@ class UserControllerTest {
                 .andExpect(status().isNotFound());
 
         mockMvc.perform(delete("/users/" + id))
-                .andExpect(status().isOk());
+                .andExpect(status().isNotFound());
     }
 }

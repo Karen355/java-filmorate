@@ -55,6 +55,7 @@ public class FilmService {
     }
 
     public void delete(Integer id) {
+        ensureFilmExists(id);
         filmStorage.delete(id);
         log.info("Удалён фильм: id={}", id);
     }

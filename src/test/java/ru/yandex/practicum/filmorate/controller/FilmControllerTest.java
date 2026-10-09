@@ -221,6 +221,6 @@ class FilmControllerTest {
                 .andExpect(status().isNotFound());
 
         mockMvc.perform(delete("/films/" + id))
-                .andExpect(status().isOk());
+                .andExpect(status().isNotFound());
     }
 }
