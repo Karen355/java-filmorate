@@ -38,6 +38,8 @@ class FilmServiceTest {
     private GenreService genreService;
     @Mock
     private MpaService mpaService;
+    @Mock
+    private DirectorService directorService;
 
     @InjectMocks
     private FilmService filmService;
