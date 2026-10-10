@@ -13,6 +13,7 @@ import ru.yandex.practicum.filmorate.model.Genre;
 import ru.yandex.practicum.filmorate.storage.mapper.FilmRowMapper;
 
 import java.sql.PreparedStatement;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.ArrayList;
 import java.util.List;
@@ -98,14 +99,20 @@ public class FilmDbStorage implements FilmStorage {
     }
 
     @Override
-    public void addLike(Integer filmId, Integer userId) {
-        jdbcTemplate.update("MERGE INTO film_likes (film_id, user_id) KEY (film_id, user_id) VALUES (?, ?)",
-                filmId, userId);
+    public boolean addLike(Integer filmId, Integer userId) {
+        int updated = jdbcTemplate.update("""
+                INSERT INTO film_likes (film_id, user_id)
+                SELECT ?, ?
+                WHERE NOT EXISTS (
+                    SELECT 1 FROM film_likes WHERE film_id = ? AND user_id = ?
+                )
+                """, filmId, userId, filmId, userId);
+        return updated > 0;
     }
 
     @Override
-    public void removeLike(Integer filmId, Integer userId) {
-        jdbcTemplate.update("DELETE FROM film_likes WHERE film_id = ? AND user_id = ?", filmId, userId);
+    public boolean removeLike(Integer filmId, Integer userId) {
+        return jdbcTemplate.update("DELETE FROM film_likes WHERE film_id = ? AND user_id = ?", filmId, userId) > 0;
     }
 
     @Override
@@ -115,14 +122,27 @@ public class FilmDbStorage implements FilmStorage {
     }
 
     @Override
-    public List<Film> getPopular(int count) {
+    public List<Film> getPopular(int count, Integer genreId, Integer year) {
+        List<String> conditions = new ArrayList<>();
+        List<Object> parameters = new ArrayList<>();
+        if (genreId != null) {
+            conditions.add("EXISTS (SELECT 1 FROM film_genres fg WHERE fg.film_id = f.id AND fg.genre_id = ?)");
+            parameters.add(genreId);
+        }
+        if (year != null) {
+            conditions.add("EXTRACT(YEAR FROM f.release_date) = ?");
+            parameters.add(year);
+        }
+        String where = conditions.isEmpty() ? "" : "WHERE " + String.join(" AND ", conditions) + "\n";
         String sql = SELECT_FILMS + """
                 LEFT JOIN (SELECT film_id, COUNT(*) AS like_count FROM film_likes GROUP BY film_id) likes
                     ON likes.film_id = f.id
+                """ + where + """
                 ORDER BY COALESCE(likes.like_count, 0) DESC, f.id
                 LIMIT ?
                 """;
-        List<Film> films = jdbcTemplate.query(sql, rowMapper, count);
+        parameters.add(count);
+        List<Film> films = jdbcTemplate.query(sql, rowMapper, parameters.toArray());
         loadGenres(films);
         loadDirectors(films);
         return films;
@@ -230,6 +250,20 @@ public class FilmDbStorage implements FilmStorage {
         List<Film> films = jdbcTemplate.query(sql, rowMapper, byTitle, query, byDirector, query);
         loadGenres(films);
         loadDirectors(films);
+        return films;
+    }
+
+    @Override
+    public List<Film> getCommonFilms(Integer userId, Integer friendId) {
+        String sql = SELECT_FILMS + """
+                JOIN film_likes user_likes ON user_likes.film_id = f.id AND user_likes.user_id = ?
+                JOIN film_likes friend_likes ON friend_likes.film_id = f.id AND friend_likes.user_id = ?
+                LEFT JOIN (SELECT film_id, COUNT(*) AS like_count FROM film_likes GROUP BY film_id) likes
+                    ON likes.film_id = f.id
+                ORDER BY COALESCE(likes.like_count, 0) DESC, f.id
+                """;
+        List<Film> films = jdbcTemplate.query(sql, rowMapper, userId, friendId);
+        loadGenres(films);
         return films;
     }
 
