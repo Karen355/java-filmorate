@@ -31,6 +31,23 @@ class FilmControllerTest {
         this.objectMapper = objectMapper;
     }
 
+    private int createFilm(String name, String releaseDate, int genreId) throws Exception {
+        String json = objectMapper.writeValueAsString(java.util.Map.of(
+                "name", name,
+                "description", "Описание",
+                "releaseDate", releaseDate,
+                "duration", 120,
+                "mpa", java.util.Map.of("id", 1),
+                "genres", java.util.List.of(java.util.Map.of("id", genreId))
+        ));
+        MvcResult result = mockMvc.perform(post("/films")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(json))
+                .andExpect(status().isCreated())
+                .andReturn();
+        return objectMapper.readTree(result.getResponse().getContentAsString()).get("id").asInt();
+    }
+
     private String validFilmJson() throws Exception {
         return objectMapper.writeValueAsString(java.util.Map.of(
                 "name", "Фильм",
@@ -141,6 +158,30 @@ class FilmControllerTest {
         mockMvc.perform(get("/films/popular"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$").isArray());
+    }
+
+    @Test
+    @DisplayName("GET /films/popular?genreId&year - фильтрует по жанру и году")
+    void getPopular_withGenreAndYear_returnsFiltered() throws Exception {
+        int matching = createFilm("Подходит", "2005-05-05", 1);
+        createFilm("Другой год", "2006-05-05", 1);
+        createFilm("Другой жанр", "2005-05-05", 2);
+
+        mockMvc.perform(get("/films/popular")
+                        .param("count", "10")
+                        .param("genreId", "1")
+                        .param("year", "2005"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.length()").value(1))
+                .andExpect(jsonPath("$[0].id").value(matching))
+                .andExpect(jsonPath("$[0].genres[0].id").value(1));
+    }
+
+    @Test
+    @DisplayName("GET /films/popular?genreId - 404 для несуществующего жанра")
+    void getPopular_unknownGenre_returnsNotFound() throws Exception {
+        mockMvc.perform(get("/films/popular").param("genreId", "999"))
+                .andExpect(status().isNotFound());
     }
 
     @Test

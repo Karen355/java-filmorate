@@ -91,15 +91,19 @@ public class FilmService {
     /**
      * Популярные фильмы по числу лайков. Если count меньше нуля - ошибка валидации.
      * Если count равен нулю - пустой список. Если параметр не передан - контроллер подставляет 10.
+     * Фильтры genreId и year необязательны; несуществующий жанр - NotFoundException.
      */
-    public List<Film> getPopular(int count) {
+    public List<Film> getPopular(int count, Integer genreId, Integer year) {
         if (count < 0) {
             throw new ValidationException("Параметр count не может быть отрицательным");
+        }
+        if (genreId != null) {
+            genreService.findById(genreId);
         }
         if (count == 0) {
             return List.of();
         }
-        return filmStorage.getPopular(count);
+        return filmStorage.getPopular(count, genreId, year);
     }
 
     public List<Film> getCommonFilms(Integer userId, Integer friendId) {
