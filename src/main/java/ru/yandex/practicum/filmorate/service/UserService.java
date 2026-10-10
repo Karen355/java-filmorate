@@ -5,7 +5,13 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import ru.yandex.practicum.filmorate.exception.NotFoundException;
 import ru.yandex.practicum.filmorate.exception.ValidationException;
+import ru.yandex.practicum.filmorate.model.EventType;
+import ru.yandex.practicum.filmorate.model.FeedEvent;
+import ru.yandex.practicum.filmorate.model.Film;
+import ru.yandex.practicum.filmorate.model.Operation;
 import ru.yandex.practicum.filmorate.model.User;
+import ru.yandex.practicum.filmorate.storage.feed.FeedStorage;
+import ru.yandex.practicum.filmorate.storage.film.FilmStorage;
 import ru.yandex.practicum.filmorate.storage.user.UserStorage;
 
 import java.util.List;
@@ -19,10 +25,14 @@ import java.util.Objects;
 public class UserService {
 
     private final UserStorage userStorage;
+    private final FilmStorage filmStorage;
+    private final FeedStorage feedStorage;
 
     @Autowired
-    public UserService(UserStorage userStorage) {
+    public UserService(UserStorage userStorage, FilmStorage filmStorage, FeedStorage feedStorage) {
         this.userStorage = userStorage;
+        this.filmStorage = filmStorage;
+        this.feedStorage = feedStorage;
     }
 
     public User create(User user) {
@@ -42,6 +52,12 @@ public class UserService {
         return user;
     }
 
+    public void delete(Integer id) {
+        ensureUserExists(id);
+        userStorage.delete(id);
+        log.info("Удалён пользователь: id={}", id);
+    }
+
     public List<User> findAll() {
         return userStorage.findAll();
     }
@@ -55,7 +71,9 @@ public class UserService {
         ensureDifferentUsers(userId, friendId);
         ensureUserExists(userId);
         ensureUserExists(friendId);
-        userStorage.addFriend(userId, friendId);
+        if (userStorage.addFriend(userId, friendId)) {
+            feedStorage.addEvent(userId, EventType.FRIEND, Operation.ADD, friendId);
+        }
         log.info("Пользователь id={} добавил в друзья id={}", userId, friendId);
     }
 
@@ -63,7 +81,9 @@ public class UserService {
         ensureDifferentUsers(userId, friendId);
         ensureUserExists(userId);
         ensureUserExists(friendId);
-        userStorage.removeFriend(userId, friendId);
+        if (userStorage.removeFriend(userId, friendId)) {
+            feedStorage.addEvent(userId, EventType.FRIEND, Operation.REMOVE, friendId);
+        }
         log.info("Пользователь id={} удалил из друзей id={}", userId, friendId);
     }
 
@@ -77,6 +97,11 @@ public class UserService {
         ensureUserExists(userId);
         ensureUserExists(otherId);
         return userStorage.getCommonFriends(userId, otherId);
+    }
+
+    public List<FeedEvent> getFeed(Integer userId) {
+        ensureUserExists(userId);
+        return feedStorage.getFeed(userId);
     }
 
     private void ensureUserExists(Integer id) {
@@ -96,4 +121,10 @@ public class UserService {
             user.setName(user.getLogin());
         }
     }
+
+    public List<Film> getRecommendations(Integer userId) {
+        ensureUserExists(userId);
+        return filmStorage.getRecommendations(userId);
+    }
+
 }

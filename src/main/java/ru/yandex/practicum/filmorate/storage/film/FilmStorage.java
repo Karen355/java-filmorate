@@ -20,11 +20,25 @@ public interface FilmStorage {
 
     List<Film> findAll();
 
-    void addLike(Integer filmId, Integer userId);
+    boolean addLike(Integer filmId, Integer userId);
 
-    void removeLike(Integer filmId, Integer userId);
+    boolean removeLike(Integer filmId, Integer userId);
 
     long getLikeCount(Integer filmId);
 
-    List<Film> getPopular(int count);
+    /**
+     * Самые популярные фильмы по числу лайков.
+     *
+     * @param genreId жанр для фильтрации, {@code null} - без фильтра по жанру
+     * @param year    год релиза для фильтрации, {@code null} - без фильтра по году
+     */
+    List<Film> getPopular(int count, Integer genreId, Integer year);
+
+    List<Film> getCommonFilms(Integer userId, Integer friendId);
+
+    List<Film> findByDirector(Integer directorId, String sortBy);
+
+    List<Film> getRecommendations(Integer userId);
+
+    List<Film> search(String query, boolean byTitle, boolean byDirector);
 }
