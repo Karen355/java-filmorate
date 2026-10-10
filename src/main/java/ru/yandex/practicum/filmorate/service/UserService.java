@@ -42,6 +42,12 @@ public class UserService {
         return user;
     }
 
+    public void delete(Integer id) {
+        ensureUserExists(id);
+        userStorage.delete(id);
+        log.info("Удалён пользователь: id={}", id);
+    }
+
     public List<User> findAll() {
         return userStorage.findAll();
     }

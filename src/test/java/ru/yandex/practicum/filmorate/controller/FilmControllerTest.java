@@ -12,9 +12,7 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.transaction.annotation.Transactional;
 
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -230,6 +228,31 @@ class FilmControllerTest {
         mockMvc.perform(put("/films")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(json))
+                .andExpect(status().isNotFound());
+    }
+
+
+    @Test
+    @DisplayName("DELETE /films/{id} - удаление фильма")
+    void deleteFilm_removesFilm() throws Exception {
+
+        MvcResult result = mockMvc.perform(post("/films")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(validFilmJson()))
+                .andExpect(status().isCreated())
+                .andReturn();
+
+        int id = objectMapper.readTree(
+                result.getResponse().getContentAsString()
+        ).get("id").asInt();
+
+        mockMvc.perform(delete("/films/" + id))
+                .andExpect(status().isOk());
+
+        mockMvc.perform(get("/films/" + id))
+                .andExpect(status().isNotFound());
+
+        mockMvc.perform(delete("/films/" + id))
                 .andExpect(status().isNotFound());
     }
 
