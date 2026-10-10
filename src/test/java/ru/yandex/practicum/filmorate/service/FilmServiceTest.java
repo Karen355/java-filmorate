@@ -22,6 +22,7 @@ import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -75,27 +76,71 @@ class FilmServiceTest {
     @Test
     @DisplayName("getPopular: сортировка по числу лайков, затем по id")
     void getPopular_sortsByLikesThenId() {
-        when(filmStorage.getPopular(10)).thenReturn(List.of(film2, film1));
+        when(filmStorage.getPopular(10, null, null)).thenReturn(List.of(film2, film1));
 
-        List<Film> popular = filmService.getPopular(10);
+        List<Film> popular = filmService.getPopular(10, null, null);
 
         assertThat(popular).extracting(Film::getId).containsExactly(2, 1);
-        verify(filmStorage).getPopular(10);
+        verify(filmStorage).getPopular(10, null, null);
     }
 
     @Test
     @DisplayName("getPopular: отрицательный count - ValidationException")
     void getPopular_negativeCount_throws() {
-        assertThatThrownBy(() -> filmService.getPopular(-1))
+        assertThatThrownBy(() -> filmService.getPopular(-1, null, null))
                 .isInstanceOf(ValidationException.class);
     }
 
     @Test
     @DisplayName("getPopular: count = 0 - пустой список, storage не вызывается")
     void getPopular_zeroCount_returnsEmpty() {
-        List<Film> popular = filmService.getPopular(0);
+        List<Film> popular = filmService.getPopular(0, null, null);
         assertThat(popular).isEmpty();
-        verify(filmStorage, never()).getPopular(anyInt());
+        verify(filmStorage, never()).getPopular(anyInt(), any(), any());
+    }
+
+    @Test
+    @DisplayName("getPopular: фильтры по жанру и году передаются в storage")
+    void getPopular_withFilters_passesThemToStorage() {
+        when(filmStorage.getPopular(5, 1, 2000)).thenReturn(List.of(film1));
+
+        List<Film> popular = filmService.getPopular(5, 1, 2000);
+
+        assertThat(popular).containsExactly(film1);
+        verify(genreService).findById(1);
+    }
+
+    @Test
+    @DisplayName("getPopular: несуществующий жанр - NotFoundException, storage не вызывается")
+    void getPopular_unknownGenre_throws() {
+        when(genreService.findById(999)).thenThrow(new NotFoundException("Жанр с id=999 не найден"));
+
+        assertThatThrownBy(() -> filmService.getPopular(10, 999, null))
+                .isInstanceOf(NotFoundException.class);
+        verify(filmStorage, never()).getPopular(anyInt(), any(), any());
+    }
+
+    @Test
+    @DisplayName("getCommonFilms: проверяет пользователей и возвращает результат хранилища")
+    void getCommonFilms_returnsFilmsFromStorage() {
+        when(filmStorage.getCommonFilms(1, 2)).thenReturn(List.of(film2, film1));
+
+        List<Film> commonFilms = filmService.getCommonFilms(1, 2);
+
+        assertThat(commonFilms).extracting(Film::getId).containsExactly(2, 1);
+        verify(userStorage).findById(1);
+        verify(userStorage).findById(2);
+        verify(filmStorage).getCommonFilms(1, 2);
+    }
+
+    @Test
+    @DisplayName("getCommonFilms: неизвестный пользователь - NotFoundException")
+    void getCommonFilms_unknownUser_throws() {
+        when(userStorage.findById(99)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> filmService.getCommonFilms(99, 1))
+                .isInstanceOf(NotFoundException.class);
+        verify(filmStorage, never()).getCommonFilms(anyInt(), anyInt());
     }
 
     @Test
