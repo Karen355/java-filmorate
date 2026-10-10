@@ -53,6 +53,18 @@ erDiagram
         integer user_id PK, FK
         integer friend_id PK, FK
     }
+    reviews {
+        integer id PK
+        varchar content
+        boolean is_positive
+        integer user_id FK
+        integer film_id FK
+    }
+    review_reactions {
+        integer review_id PK, FK
+        integer user_id PK, FK
+        boolean is_useful
+    }
     mpa ||--o{ films : rating
     films ||--o{ film_genres : has
     genres ||--o{ film_genres : includes
@@ -60,11 +72,17 @@ erDiagram
     users ||--o{ film_likes : likes
     users ||--o{ friendships : initiator
     users ||--o{ friendships : recipient
+    users ||--o{ reviews : writes
+    films ||--o{ reviews : receives
+    reviews ||--o{ review_reactions : rated
+    users ||--o{ review_reactions : rates
 ```
 
 Составные первичные ключи исключают повторные лайки, жанры и заявки в друзья.
 При удалении фильма или пользователя связанные записи удаляются каскадно.
 Добавление и обновление фильма вместе с его жанрами выполняется в одной транзакции.
+Рейтинг полезности отзыва не хранится, а считается по `review_reactions`:
+лайк даёт +1, дизлайк −1. У пользователя одна оценка на отзыв, новая заменяет прежнюю.
 
 ## API
 
@@ -83,6 +101,11 @@ erDiagram
 | `GET /films/popular?count=10` | Популярные фильмы |
 | `GET /genres`, `GET /genres/{id}` | Список жанров и жанр по id |
 | `GET /mpa`, `GET /mpa/{id}` | Список рейтингов и рейтинг по id |
+| `POST /reviews`, `PUT /reviews` | Создание и обновление отзыва (меняются только `content` и `isPositive`) |
+| `GET /reviews/{id}`, `DELETE /reviews/{id}` | Отзыв по id и его удаление |
+| `GET /reviews?filmId={filmId}&count=10` | Отзывы по убыванию полезности, без `filmId` — на все фильмы |
+| `PUT /reviews/{id}/like/{userId}`, `PUT /reviews/{id}/dislike/{userId}` | Лайк и дизлайк отзыву |
+| `DELETE /reviews/{id}/like/{userId}`, `DELETE /reviews/{id}/dislike/{userId}` | Снятие лайка и дизлайка |
 
 Создание возвращает `201 Created`, остальные успешные операции — `200 OK`.
 Некорректные поля дают `400 Bad Request`, отсутствующие сущности — `404 Not Found`.

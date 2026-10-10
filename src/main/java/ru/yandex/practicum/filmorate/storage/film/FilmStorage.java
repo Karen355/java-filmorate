@@ -20,9 +20,9 @@ public interface FilmStorage {
 
     List<Film> findAll();
 
-    void addLike(Integer filmId, Integer userId);
+    boolean addLike(Integer filmId, Integer userId);
 
-    void removeLike(Integer filmId, Integer userId);
+    boolean removeLike(Integer filmId, Integer userId);
 
     long getLikeCount(Integer filmId);
 

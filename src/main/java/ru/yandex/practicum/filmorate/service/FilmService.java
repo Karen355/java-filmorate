@@ -6,8 +6,11 @@ import org.springframework.stereotype.Service;
 import ru.yandex.practicum.filmorate.exception.NotFoundException;
 import ru.yandex.practicum.filmorate.exception.ValidationException;
 import ru.yandex.practicum.filmorate.model.Director;
+import ru.yandex.practicum.filmorate.model.EventType;
 import ru.yandex.practicum.filmorate.model.Film;
 import ru.yandex.practicum.filmorate.model.Genre;
+import ru.yandex.practicum.filmorate.model.Operation;
+import ru.yandex.practicum.filmorate.storage.feed.FeedStorage;
 import ru.yandex.practicum.filmorate.storage.film.FilmStorage;
 import ru.yandex.practicum.filmorate.storage.user.UserStorage;
 
@@ -28,15 +31,17 @@ public class FilmService {
 
     private final FilmStorage filmStorage;
     private final UserStorage userStorage;
+    private final FeedStorage feedStorage;
     private final GenreService genreService;
     private final MpaService mpaService;
     private final DirectorService directorService;
 
     @Autowired
-    public FilmService(FilmStorage filmStorage, UserStorage userStorage,
+    public FilmService(FilmStorage filmStorage, UserStorage userStorage, FeedStorage feedStorage,
                        GenreService genreService, MpaService mpaService, DirectorService directorService) {
         this.filmStorage = filmStorage;
         this.userStorage = userStorage;
+        this.feedStorage = feedStorage;
         this.genreService = genreService;
         this.mpaService = mpaService;
         this.directorService = directorService;
@@ -77,14 +82,18 @@ public class FilmService {
     public void addLike(Integer filmId, Integer userId) {
         ensureFilmExists(filmId);
         ensureUserExists(userId);
-        filmStorage.addLike(filmId, userId);
+        if (filmStorage.addLike(filmId, userId)) {
+            feedStorage.addEvent(userId, EventType.LIKE, Operation.ADD, filmId);
+        }
         log.info("Пользователь id={} поставил лайк фильму id={}", userId, filmId);
     }
 
     public void removeLike(Integer filmId, Integer userId) {
         ensureFilmExists(filmId);
         ensureUserExists(userId);
-        filmStorage.removeLike(filmId, userId);
+        if (filmStorage.removeLike(filmId, userId)) {
+            feedStorage.addEvent(userId, EventType.LIKE, Operation.REMOVE, filmId);
+        }
         log.info("Пользователь id={} убрал лайк с фильма id={}", userId, filmId);
     }
 

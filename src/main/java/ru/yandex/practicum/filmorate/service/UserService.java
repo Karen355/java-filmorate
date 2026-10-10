@@ -5,7 +5,11 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import ru.yandex.practicum.filmorate.exception.NotFoundException;
 import ru.yandex.practicum.filmorate.exception.ValidationException;
+import ru.yandex.practicum.filmorate.model.EventType;
+import ru.yandex.practicum.filmorate.model.FeedEvent;
+import ru.yandex.practicum.filmorate.model.Operation;
 import ru.yandex.practicum.filmorate.model.User;
+import ru.yandex.practicum.filmorate.storage.feed.FeedStorage;
 import ru.yandex.practicum.filmorate.storage.user.UserStorage;
 
 import java.util.List;
@@ -19,10 +23,12 @@ import java.util.Objects;
 public class UserService {
 
     private final UserStorage userStorage;
+    private final FeedStorage feedStorage;
 
     @Autowired
-    public UserService(UserStorage userStorage) {
+    public UserService(UserStorage userStorage, FeedStorage feedStorage) {
         this.userStorage = userStorage;
+        this.feedStorage = feedStorage;
     }
 
     public User create(User user) {
@@ -61,7 +67,9 @@ public class UserService {
         ensureDifferentUsers(userId, friendId);
         ensureUserExists(userId);
         ensureUserExists(friendId);
-        userStorage.addFriend(userId, friendId);
+        if (userStorage.addFriend(userId, friendId)) {
+            feedStorage.addEvent(userId, EventType.FRIEND, Operation.ADD, friendId);
+        }
         log.info("Пользователь id={} добавил в друзья id={}", userId, friendId);
     }
 
@@ -69,7 +77,9 @@ public class UserService {
         ensureDifferentUsers(userId, friendId);
         ensureUserExists(userId);
         ensureUserExists(friendId);
-        userStorage.removeFriend(userId, friendId);
+        if (userStorage.removeFriend(userId, friendId)) {
+            feedStorage.addEvent(userId, EventType.FRIEND, Operation.REMOVE, friendId);
+        }
         log.info("Пользователь id={} удалил из друзей id={}", userId, friendId);
     }
 
@@ -83,6 +93,11 @@ public class UserService {
         ensureUserExists(userId);
         ensureUserExists(otherId);
         return userStorage.getCommonFriends(userId, otherId);
+    }
+
+    public List<FeedEvent> getFeed(Integer userId) {
+        ensureUserExists(userId);
+        return feedStorage.getFeed(userId);
     }
 
     private void ensureUserExists(Integer id) {

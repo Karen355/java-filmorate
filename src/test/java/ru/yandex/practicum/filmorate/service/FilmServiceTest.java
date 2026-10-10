@@ -9,7 +9,10 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import ru.yandex.practicum.filmorate.exception.NotFoundException;
 import ru.yandex.practicum.filmorate.exception.ValidationException;
+import ru.yandex.practicum.filmorate.model.EventType;
 import ru.yandex.practicum.filmorate.model.Film;
+import ru.yandex.practicum.filmorate.model.Operation;
+import ru.yandex.practicum.filmorate.storage.feed.FeedStorage;
 import ru.yandex.practicum.filmorate.storage.film.FilmStorage;
 import ru.yandex.practicum.filmorate.storage.user.UserStorage;
 
@@ -34,6 +37,8 @@ class FilmServiceTest {
     private FilmStorage filmStorage;
     @Mock
     private UserStorage userStorage;
+    @Mock
+    private FeedStorage feedStorage;
     @Mock
     private GenreService genreService;
     @Mock
@@ -144,5 +149,41 @@ class FilmServiceTest {
         when(filmStorage.findById(99)).thenReturn(Optional.empty());
         assertThatThrownBy(() -> filmService.addLike(99, 1))
                 .isInstanceOf(NotFoundException.class);
+    }
+
+    @Test
+    @DisplayName("addLike: записывает событие в ленту")
+    void addLike_recordsFeedEvent() {
+        when(filmStorage.findById(1)).thenReturn(Optional.of(film1));
+        when(filmStorage.addLike(1, 1)).thenReturn(true);
+
+        filmService.addLike(1, 1);
+
+        verify(filmStorage).addLike(1, 1);
+        verify(feedStorage).addEvent(1, EventType.LIKE, Operation.ADD, 1);
+    }
+
+    @Test
+    @DisplayName("addLike: повторный лайк не записывает событие в ленту")
+    void addLike_withoutStateChange_doesNotRecordFeedEvent() {
+        when(filmStorage.findById(1)).thenReturn(Optional.of(film1));
+        when(filmStorage.addLike(1, 1)).thenReturn(false);
+
+        filmService.addLike(1, 1);
+
+        verify(filmStorage).addLike(1, 1);
+        verify(feedStorage, never()).addEvent(1, EventType.LIKE, Operation.ADD, 1);
+    }
+
+    @Test
+    @DisplayName("removeLike: снятие отсутствующего лайка не записывает событие в ленту")
+    void removeLike_withoutStateChange_doesNotRecordFeedEvent() {
+        when(filmStorage.findById(1)).thenReturn(Optional.of(film1));
+        when(filmStorage.removeLike(1, 1)).thenReturn(false);
+
+        filmService.removeLike(1, 1);
+
+        verify(filmStorage).removeLike(1, 1);
+        verify(feedStorage, never()).addEvent(1, EventType.LIKE, Operation.REMOVE, 1);
     }
 }

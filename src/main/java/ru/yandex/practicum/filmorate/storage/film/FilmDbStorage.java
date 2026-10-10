@@ -98,14 +98,20 @@ public class FilmDbStorage implements FilmStorage {
     }
 
     @Override
-    public void addLike(Integer filmId, Integer userId) {
-        jdbcTemplate.update("MERGE INTO film_likes (film_id, user_id) KEY (film_id, user_id) VALUES (?, ?)",
-                filmId, userId);
+    public boolean addLike(Integer filmId, Integer userId) {
+        int updated = jdbcTemplate.update("""
+                INSERT INTO film_likes (film_id, user_id)
+                SELECT ?, ?
+                WHERE NOT EXISTS (
+                    SELECT 1 FROM film_likes WHERE film_id = ? AND user_id = ?
+                )
+                """, filmId, userId, filmId, userId);
+        return updated > 0;
     }
 
     @Override
-    public void removeLike(Integer filmId, Integer userId) {
-        jdbcTemplate.update("DELETE FROM film_likes WHERE film_id = ? AND user_id = ?", filmId, userId);
+    public boolean removeLike(Integer filmId, Integer userId) {
+        return jdbcTemplate.update("DELETE FROM film_likes WHERE film_id = ? AND user_id = ?", filmId, userId) > 0;
     }
 
     @Override
