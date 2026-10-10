@@ -15,6 +15,7 @@ import ru.yandex.practicum.filmorate.storage.mapper.FilmRowMapper;
 import java.sql.PreparedStatement;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -146,6 +147,75 @@ public class FilmDbStorage implements FilmStorage {
         loadDirectors(films);
         return films;
     }
+
+    @Override
+    public List<Film> getRecommendations(Integer userId) {
+
+        String similarUserSql = """
+            SELECT other_likes.user_id,
+                   COUNT(*) AS common_count
+            FROM film_likes my_likes
+            JOIN film_likes other_likes
+                ON my_likes.film_id = other_likes.film_id
+            WHERE my_likes.user_id = ?
+                AND other_likes.user_id <> ?
+            GROUP BY other_likes.user_id
+            ORDER BY common_count DESC, other_likes.user_id
+            """;
+
+        List<Map.Entry<Integer, Long>> matches = jdbcTemplate.query(
+                similarUserSql,
+                (rs, rowNum) -> Map.entry(
+                        rs.getInt("user_id"),
+                        rs.getLong("common_count")
+                ),
+                userId, userId
+        );
+
+        if (matches.isEmpty()) {
+            return Collections.emptyList();
+        }
+
+        long maxMatches = matches.get(0).getValue();
+
+        List<Integer> similarUsers = matches.stream()
+                .filter(match -> match.getValue() == maxMatches)
+                .map(Map.Entry::getKey)
+                .toList();
+
+        String placeholders = String.join(
+                ", ", Collections.nCopies(similarUsers.size(), "?")
+        );
+
+        String sql = SELECT_FILMS + """
+            WHERE EXISTS (
+                SELECT 1
+                FROM film_likes peer_likes
+                WHERE peer_likes.film_id = f.id
+                    AND peer_likes.user_id IN (%s)
+            )
+            AND NOT EXISTS (
+                SELECT 1
+                FROM film_likes own_likes
+                WHERE own_likes.film_id = f.id
+                    AND own_likes.user_id = ?
+            )
+            ORDER BY f.id
+            """.formatted(placeholders);
+
+        List<Object> parameters = new ArrayList<>(similarUsers);
+        parameters.add(userId);
+
+        List<Film> films = jdbcTemplate.query(
+                sql, rowMapper, parameters.toArray()
+        );
+
+        loadGenres(films);
+        loadDirectors(films);
+
+        return films;
+    }
+
 
     @Override
     public List<Film> findByDirector(Integer directorId, String sortBy) {
