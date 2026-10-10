@@ -82,9 +82,8 @@ public class FilmService {
     public void addLike(Integer filmId, Integer userId) {
         ensureFilmExists(filmId);
         ensureUserExists(userId);
-        if (filmStorage.addLike(filmId, userId)) {
-            feedStorage.addEvent(userId, EventType.LIKE, Operation.ADD, filmId);
-        }
+        filmStorage.addLike(filmId, userId);
+        feedStorage.addEvent(userId, EventType.LIKE, Operation.ADD, filmId);
         log.info("Пользователь id={} поставил лайк фильму id={}", userId, filmId);
     }
 

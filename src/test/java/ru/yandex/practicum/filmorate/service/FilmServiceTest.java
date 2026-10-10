@@ -164,15 +164,15 @@ class FilmServiceTest {
     }
 
     @Test
-    @DisplayName("addLike: повторный лайк не записывает событие в ленту")
-    void addLike_withoutStateChange_doesNotRecordFeedEvent() {
+    @DisplayName("addLike: повторный лайк записывает событие в ленту")
+    void addLike_withoutStateChange_recordsFeedEvent() {
         when(filmStorage.findById(1)).thenReturn(Optional.of(film1));
         when(filmStorage.addLike(1, 1)).thenReturn(false);
 
         filmService.addLike(1, 1);
 
         verify(filmStorage).addLike(1, 1);
-        verify(feedStorage, never()).addEvent(1, EventType.LIKE, Operation.ADD, 1);
+        verify(feedStorage).addEvent(1, EventType.LIKE, Operation.ADD, 1);
     }
 
     @Test

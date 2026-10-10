@@ -274,11 +274,12 @@ class UserControllerTest {
         mockMvc.perform(put("/users/" + userId + "/friends/" + friendId)).andExpect(status().isOk());
         mockMvc.perform(delete("/users/" + userId + "/friends/" + friendId)).andExpect(status().isOk());
         mockMvc.perform(put("/films/" + filmId + "/like/" + userId)).andExpect(status().isOk());
+        mockMvc.perform(put("/films/" + filmId + "/like/" + userId)).andExpect(status().isOk());
         mockMvc.perform(delete("/films/" + filmId + "/like/" + userId)).andExpect(status().isOk());
 
         mockMvc.perform(get("/users/" + userId + "/feed"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.length()").value(4))
+                .andExpect(jsonPath("$.length()").value(5))
                 .andExpect(jsonPath("$[0].userId").value(userId))
                 .andExpect(jsonPath("$[0].eventType").value("FRIEND"))
                 .andExpect(jsonPath("$[0].operation").value("ADD"))
@@ -289,9 +290,11 @@ class UserControllerTest {
                 .andExpect(jsonPath("$[2].operation").value("ADD"))
                 .andExpect(jsonPath("$[2].entityId").value(filmId))
                 .andExpect(jsonPath("$[3].eventType").value("LIKE"))
-                .andExpect(jsonPath("$[3].operation").value("REMOVE"))
-                .andExpect(jsonPath("$[3].timestamp").isNumber())
-                .andExpect(jsonPath("$[3].eventId").isNumber());
+                .andExpect(jsonPath("$[3].operation").value("ADD"))
+                .andExpect(jsonPath("$[4].eventType").value("LIKE"))
+                .andExpect(jsonPath("$[4].operation").value("REMOVE"))
+                .andExpect(jsonPath("$[4].timestamp").isNumber())
+                .andExpect(jsonPath("$[4].eventId").isNumber());
     }
 
     @Test
