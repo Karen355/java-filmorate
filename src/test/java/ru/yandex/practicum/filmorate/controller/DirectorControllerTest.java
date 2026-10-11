@@ -131,6 +131,33 @@ class DirectorControllerTest {
                 .andExpect(jsonPath("$.directors[0].id").value(directorId));
     }
 
+    @Test
+    @DisplayName("Несколько режиссёров фильма загружаются из базы без дублей")
+    void multipleDirectors_areLoadedAndNormalized() throws Exception {
+        int firstId = createDirector("Первый");
+        int secondId = createDirector("Второй");
+        String film = filmJson("Фильм", "2000-01-01", secondId, null)
+                .replace("{\"id\":" + secondId + "}",
+                        "{\"id\":" + secondId + ",\"name\":\"Неверное имя\"},"
+                                + "{\"id\":" + firstId + "},{\"id\":" + secondId + "}");
+
+        mockMvc.perform(post("/films")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(film))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.directors[*].id", contains(firstId, secondId)))
+                .andExpect(jsonPath("$.directors[*].name", contains("Первый", "Второй")));
+    }
+
+    @Test
+    @DisplayName("Имя режиссёра длиннее ограничения возвращает 400")
+    void tooLongDirectorName_isRejected() throws Exception {
+        mockMvc.perform(post("/directors")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(new NameRequest("И".repeat(101)))))
+                .andExpect(status().isBadRequest());
+    }
+
     private int createDirector(String name) throws Exception {
         MvcResult result = mockMvc.perform(post("/directors")
                         .contentType(MediaType.APPLICATION_JSON)

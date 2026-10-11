@@ -7,6 +7,7 @@ import ru.yandex.practicum.filmorate.model.Director;
 import ru.yandex.practicum.filmorate.storage.director.DirectorStorage;
 
 import java.util.List;
+import java.util.Set;
 
 @Service
 @RequiredArgsConstructor
@@ -37,5 +38,9 @@ public class DirectorService {
 
     public List<Director> findAll() {
         return directorStorage.findAll();
+    }
+
+    public List<Director> findAllByIds(Set<Integer> ids) {
+        return directorStorage.findAllByIds(ids);
     }
 }

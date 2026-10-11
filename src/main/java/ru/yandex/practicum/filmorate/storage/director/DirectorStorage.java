@@ -4,6 +4,7 @@ import ru.yandex.practicum.filmorate.model.Director;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 
 public interface DirectorStorage {
 
@@ -16,4 +17,6 @@ public interface DirectorStorage {
     Optional<Director> findById(Integer id);
 
     List<Director> findAll();
+
+    List<Director> findAllByIds(Set<Integer> ids);
 }

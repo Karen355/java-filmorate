@@ -9,8 +9,10 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import ru.yandex.practicum.filmorate.exception.NotFoundException;
 import ru.yandex.practicum.filmorate.exception.ValidationException;
+import ru.yandex.practicum.filmorate.model.Director;
 import ru.yandex.practicum.filmorate.model.EventType;
 import ru.yandex.practicum.filmorate.model.Film;
+import ru.yandex.practicum.filmorate.model.Mpa;
 import ru.yandex.practicum.filmorate.model.Operation;
 import ru.yandex.practicum.filmorate.storage.feed.FeedStorage;
 import ru.yandex.practicum.filmorate.storage.film.FilmStorage;
@@ -19,14 +21,15 @@ import ru.yandex.practicum.filmorate.storage.user.UserStorage;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -141,6 +144,44 @@ class FilmServiceTest {
         assertThatThrownBy(() -> filmService.getCommonFilms(99, 1))
                 .isInstanceOf(NotFoundException.class);
         verify(filmStorage, never()).getCommonFilms(anyInt(), anyInt());
+    }
+
+    @Test
+    @DisplayName("create: несколько режиссёров загружаются одним запросом")
+    void create_loadsDirectorsInOneBatch() {
+        Film film = Film.builder()
+                .mpa(new Mpa(1, null))
+                .directors(List.of(new Director(2, "Неверное имя"), new Director(1, null),
+                        new Director(2, null)))
+                .build();
+        when(mpaService.findById(1)).thenReturn(new Mpa(1, "G"));
+        when(directorService.findAllByIds(Set.of(1, 2)))
+                .thenReturn(List.of(new Director(1, "Первый"), new Director(2, "Второй")));
+        when(filmStorage.create(film)).thenReturn(film);
+
+        Film created = filmService.create(film);
+
+        assertThat(created.getDirectors()).containsExactly(new Director(1, "Первый"),
+                new Director(2, "Второй"));
+        verify(directorService).findAllByIds(Set.of(1, 2));
+        verify(directorService, never()).findById(anyInt());
+    }
+
+    @Test
+    @DisplayName("create: отсутствующий в базе режиссёр даёт 404")
+    void create_unknownDirector_throws() {
+        Film film = Film.builder()
+                .mpa(new Mpa(1, null))
+                .directors(List.of(new Director(1, null), new Director(999, null)))
+                .build();
+        when(mpaService.findById(1)).thenReturn(new Mpa(1, "G"));
+        when(directorService.findAllByIds(Set.of(1, 999)))
+                .thenReturn(List.of(new Director(1, "Первый")));
+
+        assertThatThrownBy(() -> filmService.create(film))
+                .isInstanceOf(NotFoundException.class)
+                .hasMessage("Режиссёр с id=999 не найден");
+        verify(filmStorage, never()).create(any());
     }
 
     @Test

@@ -19,6 +19,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
+import java.util.TreeSet;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -115,19 +116,19 @@ public class FilmService {
     }
 
     public List<Film> getCommonFilms(Integer userId, Integer friendId) {
-    ensureUserExists(userId);
-    ensureUserExists(friendId);
-    return filmStorage.getCommonFilms(userId, friendId);
-}
-
-public List<Film> findByDirector(Integer directorId, String sortBy) {
-    if (!"year".equals(sortBy) && !"likes".equals(sortBy)) {
-        throw new ValidationException("Параметр sortBy должен быть year или likes");
+        ensureUserExists(userId);
+        ensureUserExists(friendId);
+        return filmStorage.getCommonFilms(userId, friendId);
     }
 
-    directorService.findById(directorId);
-    return filmStorage.findByDirector(directorId, sortBy);
-}
+    public List<Film> findByDirector(Integer directorId, String sortBy) {
+        if (!"year".equals(sortBy) && !"likes".equals(sortBy)) {
+            throw new ValidationException("Параметр sortBy должен быть year или likes");
+        }
+
+        directorService.findById(directorId);
+        return filmStorage.findByDirector(directorId, sortBy);
+    }
 
     public List<Film> search(String query, String by) {
         Set<String> fields = Arrays.stream(by.split(",", -1))
@@ -176,12 +177,21 @@ public List<Film> findByDirector(Integer directorId, String sortBy) {
             film.setDirectors(List.of());
             return;
         }
-        Map<Integer, Director> directorsById = new TreeMap<>();
+        Set<Integer> directorIds = new TreeSet<>();
         for (Director director : film.getDirectors()) {
             if (director == null || director.getId() == null) {
                 throw new ValidationException("Идентификатор режиссёра обязателен");
             }
-            Director storedDirector = directorService.findById(director.getId());
+            directorIds.add(director.getId());
+        }
+        Map<Integer, Director> availableDirectors = directorService.findAllByIds(directorIds).stream()
+                .collect(Collectors.toMap(Director::getId, Function.identity()));
+        Map<Integer, Director> directorsById = new TreeMap<>();
+        for (Director director : film.getDirectors()) {
+            Director storedDirector = availableDirectors.get(director.getId());
+            if (storedDirector == null) {
+                throw new NotFoundException("Режиссёр с id=" + director.getId() + " не найден");
+            }
             directorsById.put(storedDirector.getId(), storedDirector);
         }
         film.setDirectors(List.copyOf(directorsById.values()));

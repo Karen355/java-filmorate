@@ -10,9 +10,11 @@ import ru.yandex.practicum.filmorate.model.Director;
 import ru.yandex.practicum.filmorate.storage.mapper.DirectorRowMapper;
 
 import java.sql.PreparedStatement;
+import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
 
 @Repository
 @RequiredArgsConstructor
@@ -61,5 +63,15 @@ public class DirectorDbStorage implements DirectorStorage {
     @Override
     public List<Director> findAll() {
         return jdbcTemplate.query("SELECT id, name FROM directors ORDER BY id", rowMapper);
+    }
+
+    @Override
+    public List<Director> findAllByIds(Set<Integer> ids) {
+        if (ids.isEmpty()) {
+            return List.of();
+        }
+        String placeholders = String.join(", ", Collections.nCopies(ids.size(), "?"));
+        String sql = "SELECT id, name FROM directors WHERE id IN (%s) ORDER BY id".formatted(placeholders);
+        return jdbcTemplate.query(sql, rowMapper, ids.toArray());
     }
 }
