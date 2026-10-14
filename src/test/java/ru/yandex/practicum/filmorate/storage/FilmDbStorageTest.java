@@ -146,13 +146,77 @@ class FilmDbStorageTest {
         filmStorage.addLike(third.getId(), secondUser.getId());
         filmStorage.addLike(fourth.getId(), firstUser.getId());
 
-        assertThat(filmStorage.getPopular(2)).extracting(Film::getId)
+        assertThat(filmStorage.getPopular(2, null, null)).extracting(Film::getId)
                 .containsExactly(third.getId(), second.getId());
-        assertThat(filmStorage.getPopular(10)).extracting(Film::getId)
+        assertThat(filmStorage.getPopular(10, null, null)).extracting(Film::getId)
                 .containsExactly(third.getId(), second.getId(), fourth.getId(), first.getId());
-        assertThat(filmStorage.getPopular(1).getFirst().getGenres())
+        assertThat(filmStorage.getPopular(1, null, null).getFirst().getGenres())
                 .containsExactly(new Genre(1, "Комедия"), new Genre(2, "Драма"));
-        assertThat(filmStorage.getPopular(0)).isEmpty();
+        assertThat(filmStorage.getPopular(0, null, null)).isEmpty();
+    }
+
+    @Test
+    @DisplayName("getPopular: фильтрация по жанру, году и их комбинации")
+    void getPopular_filtersByGenreAndYear() {
+        Film comedy2000 = film("Comedy 2000");
+        comedy2000.setGenres(List.of(new Genre(1, null)));
+        filmStorage.create(comedy2000);
+        Film comedyDrama2010 = film("Comedy Drama 2010");
+        comedyDrama2010.setReleaseDate(LocalDate.of(2010, 6, 1));
+        comedyDrama2010.setGenres(List.of(new Genre(1, null), new Genre(2, null)));
+        filmStorage.create(comedyDrama2010);
+        Film drama2000 = film("Drama 2000");
+        drama2000.setGenres(List.of(new Genre(2, null)));
+        filmStorage.create(drama2000);
+        Film noGenre2010 = film("No genre 2010");
+        noGenre2010.setReleaseDate(LocalDate.of(2010, 12, 31));
+        filmStorage.create(noGenre2010);
+        User firstUser = userStorage.create(user("first"));
+        User secondUser = userStorage.create(user("second"));
+        filmStorage.addLike(comedyDrama2010.getId(), firstUser.getId());
+        filmStorage.addLike(comedyDrama2010.getId(), secondUser.getId());
+        filmStorage.addLike(drama2000.getId(), firstUser.getId());
+
+        assertThat(filmStorage.getPopular(10, 1, null)).extracting(Film::getId)
+                .containsExactly(comedyDrama2010.getId(), comedy2000.getId());
+        assertThat(filmStorage.getPopular(10, null, 2000)).extracting(Film::getId)
+                .containsExactly(drama2000.getId(), comedy2000.getId());
+        assertThat(filmStorage.getPopular(10, 2, 2000)).extracting(Film::getId)
+                .containsExactly(drama2000.getId());
+        assertThat(filmStorage.getPopular(1, 1, null)).extracting(Film::getId)
+                .containsExactly(comedyDrama2010.getId());
+        assertThat(filmStorage.getPopular(10, 1, null).getFirst().getGenres())
+                .containsExactly(new Genre(1, "Комедия"), new Genre(2, "Драма"));
+        assertThat(filmStorage.getPopular(10, 3, null)).isEmpty();
+        assertThat(filmStorage.getPopular(10, null, 1999)).isEmpty();
+    }
+
+    @Test
+    @DisplayName("getCommonFilms: общие лайкнутые фильмы отсортированы по популярности")
+    void getCommonFilms_returnsIntersectionSortedByPopularity() {
+        Film lower = filmStorage.create(film("Lower"));
+        Film higher = film("Higher");
+        higher.setGenres(List.of(new Genre(1, null)));
+        filmStorage.create(higher);
+        Film onlyFirst = filmStorage.create(film("Only first"));
+        User first = userStorage.create(user("first"));
+        User second = userStorage.create(user("second"));
+        User third = userStorage.create(user("third"));
+
+        filmStorage.addLike(lower.getId(), first.getId());
+        filmStorage.addLike(lower.getId(), second.getId());
+        filmStorage.addLike(higher.getId(), first.getId());
+        filmStorage.addLike(higher.getId(), second.getId());
+        filmStorage.addLike(higher.getId(), third.getId());
+        filmStorage.addLike(onlyFirst.getId(), first.getId());
+        filmStorage.addLike(onlyFirst.getId(), third.getId());
+
+        List<Film> commonFilms = filmStorage.getCommonFilms(first.getId(), second.getId());
+
+        assertThat(commonFilms).extracting(Film::getId)
+                .containsExactly(higher.getId(), lower.getId());
+        assertThat(commonFilms.getFirst().getGenres())
+                .containsExactly(new Genre(1, "Комедия"));
     }
 
     @Test

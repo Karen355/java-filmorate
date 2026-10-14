@@ -58,7 +58,7 @@ class DatabasePersistenceTest {
             assertThat(userService.getFriends(first.getId())).containsExactly(second);
             assertThat(userService.getFriends(second.getId())).isEmpty();
             assertThat(filmService.findById(film.getId())).isEqualTo(film);
-            assertThat(filmService.getPopular(10)).containsExactly(film);
+            assertThat(filmService.getPopular(10, null, null)).containsExactly(film);
             assertThat(context.getBean(FilmDbStorage.class).getLikeCount(film.getId())).isEqualTo(1);
             assertThat(context.getBean(MpaService.class).findAll()).hasSize(5);
             assertThat(context.getBean(GenreService.class).findAll()).hasSize(6);

@@ -12,9 +12,7 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.transaction.annotation.Transactional;
 
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -31,6 +29,23 @@ class FilmControllerTest {
     FilmControllerTest(MockMvc mockMvc, ObjectMapper objectMapper) {
         this.mockMvc = mockMvc;
         this.objectMapper = objectMapper;
+    }
+
+    private int createFilm(String name, String releaseDate, int genreId) throws Exception {
+        String json = objectMapper.writeValueAsString(java.util.Map.of(
+                "name", name,
+                "description", "Описание",
+                "releaseDate", releaseDate,
+                "duration", 120,
+                "mpa", java.util.Map.of("id", 1),
+                "genres", java.util.List.of(java.util.Map.of("id", genreId))
+        ));
+        MvcResult result = mockMvc.perform(post("/films")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(json))
+                .andExpect(status().isCreated())
+                .andReturn();
+        return objectMapper.readTree(result.getResponse().getContentAsString()).get("id").asInt();
     }
 
     private String validFilmJson() throws Exception {
@@ -146,6 +161,62 @@ class FilmControllerTest {
     }
 
     @Test
+    @DisplayName("GET /films/popular?genreId&year - фильтрует по жанру и году")
+    void getPopular_withGenreAndYear_returnsFiltered() throws Exception {
+        int matching = createFilm("Подходит", "2005-05-05", 1);
+        createFilm("Другой год", "2006-05-05", 1);
+        createFilm("Другой жанр", "2005-05-05", 2);
+
+        mockMvc.perform(get("/films/popular")
+                        .param("count", "10")
+                        .param("genreId", "1")
+                        .param("year", "2005"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.length()").value(1))
+                .andExpect(jsonPath("$[0].id").value(matching))
+                .andExpect(jsonPath("$[0].genres[0].id").value(1));
+    }
+
+    @Test
+    @DisplayName("GET /films/popular?genreId - 404 для несуществующего жанра")
+    void getPopular_unknownGenre_returnsNotFound() throws Exception {
+        mockMvc.perform(get("/films/popular").param("genreId", "999"))
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
+    @DisplayName("GET /films/common - возвращает общие фильмы по популярности")
+    void getCommonFilms_returnsCommonFilmsSortedByPopularity() throws Exception {
+        int firstUserId = createUser("common-first");
+        int secondUserId = createUser("common-second");
+        int thirdUserId = createUser("common-third");
+        int lowerFilmId = createFilm("Lower");
+        int higherFilmId = createFilm("Higher");
+        int onlyFirstFilmId = createFilm("Only first");
+
+        mockMvc.perform(put("/films/" + lowerFilmId + "/like/" + firstUserId))
+                .andExpect(status().isOk());
+        mockMvc.perform(put("/films/" + lowerFilmId + "/like/" + secondUserId))
+                .andExpect(status().isOk());
+        mockMvc.perform(put("/films/" + higherFilmId + "/like/" + firstUserId))
+                .andExpect(status().isOk());
+        mockMvc.perform(put("/films/" + higherFilmId + "/like/" + secondUserId))
+                .andExpect(status().isOk());
+        mockMvc.perform(put("/films/" + higherFilmId + "/like/" + thirdUserId))
+                .andExpect(status().isOk());
+        mockMvc.perform(put("/films/" + onlyFirstFilmId + "/like/" + firstUserId))
+                .andExpect(status().isOk());
+
+        mockMvc.perform(get("/films/common")
+                        .param("userId", String.valueOf(firstUserId))
+                        .param("friendId", String.valueOf(secondUserId)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].id").value(higherFilmId))
+                .andExpect(jsonPath("$[1].id").value(lowerFilmId))
+                .andExpect(jsonPath("$.length()").value(2));
+    }
+
+    @Test
     @DisplayName("GET /films/{id} - возвращает фильм после создания")
     void getFilmById_returnsOk() throws Exception {
         MvcResult created = mockMvc.perform(post("/films")
@@ -199,5 +270,58 @@ class FilmControllerTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(json))
                 .andExpect(status().isNotFound());
+    }
+
+
+    @Test
+    @DisplayName("DELETE /films/{id} - удаление фильма")
+    void deleteFilm_removesFilm() throws Exception {
+
+        MvcResult result = mockMvc.perform(post("/films")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(validFilmJson()))
+                .andExpect(status().isCreated())
+                .andReturn();
+
+        int id = objectMapper.readTree(
+                result.getResponse().getContentAsString()
+        ).get("id").asInt();
+
+        mockMvc.perform(delete("/films/" + id))
+                .andExpect(status().isOk());
+
+        mockMvc.perform(get("/films/" + id))
+                .andExpect(status().isNotFound());
+
+        mockMvc.perform(delete("/films/" + id))
+                .andExpect(status().isNotFound());
+    }
+
+    private int createUser(String login) throws Exception {
+        MvcResult userResult = mockMvc.perform(post("/users")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(java.util.Map.of(
+                                "email", login + "@mail.ru",
+                                "login", login,
+                                "birthday", "1990-01-01"
+                        ))))
+                .andExpect(status().isCreated())
+                .andReturn();
+        return objectMapper.readTree(userResult.getResponse().getContentAsString()).get("id").asInt();
+    }
+
+    private int createFilm(String name) throws Exception {
+        MvcResult filmResult = mockMvc.perform(post("/films")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(java.util.Map.of(
+                                "name", name,
+                                "description", "Description",
+                                "releaseDate", "1990-01-01",
+                                "duration", 120,
+                                "mpa", java.util.Map.of("id", 1)
+                        ))))
+                .andExpect(status().isCreated())
+                .andReturn();
+        return objectMapper.readTree(filmResult.getResponse().getContentAsString()).get("id").asInt();
     }
 }

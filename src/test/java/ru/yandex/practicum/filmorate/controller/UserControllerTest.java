@@ -265,6 +265,39 @@ class UserControllerTest {
     }
 
     @Test
+    @DisplayName("GET /users/{id}/feed - возвращает события пользователя")
+    void getFeed_returnsUserEvents() throws Exception {
+        int userId = createUser("feed-user");
+        int friendId = createUser("feed-friend");
+        int filmId = createFilm("Feed film");
+
+        mockMvc.perform(put("/users/" + userId + "/friends/" + friendId)).andExpect(status().isOk());
+        mockMvc.perform(delete("/users/" + userId + "/friends/" + friendId)).andExpect(status().isOk());
+        mockMvc.perform(put("/films/" + filmId + "/like/" + userId)).andExpect(status().isOk());
+        mockMvc.perform(put("/films/" + filmId + "/like/" + userId)).andExpect(status().isOk());
+        mockMvc.perform(delete("/films/" + filmId + "/like/" + userId)).andExpect(status().isOk());
+
+        mockMvc.perform(get("/users/" + userId + "/feed"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.length()").value(5))
+                .andExpect(jsonPath("$[0].userId").value(userId))
+                .andExpect(jsonPath("$[0].eventType").value("FRIEND"))
+                .andExpect(jsonPath("$[0].operation").value("ADD"))
+                .andExpect(jsonPath("$[0].entityId").value(friendId))
+                .andExpect(jsonPath("$[1].eventType").value("FRIEND"))
+                .andExpect(jsonPath("$[1].operation").value("REMOVE"))
+                .andExpect(jsonPath("$[2].eventType").value("LIKE"))
+                .andExpect(jsonPath("$[2].operation").value("ADD"))
+                .andExpect(jsonPath("$[2].entityId").value(filmId))
+                .andExpect(jsonPath("$[3].eventType").value("LIKE"))
+                .andExpect(jsonPath("$[3].operation").value("ADD"))
+                .andExpect(jsonPath("$[4].eventType").value("LIKE"))
+                .andExpect(jsonPath("$[4].operation").value("REMOVE"))
+                .andExpect(jsonPath("$[4].timestamp").isNumber())
+                .andExpect(jsonPath("$[4].eventId").isNumber());
+    }
+
+    @Test
     @DisplayName("PUT /users/{id}/friends/{friendId} - нельзя добавить самого себя")
     void addFriend_self_returns400() throws Exception {
         MvcResult u = mockMvc.perform(post("/users")
@@ -279,5 +312,56 @@ class UserControllerTest {
         int id = objectMapper.readTree(u.getResponse().getContentAsString()).get("id").asInt();
         mockMvc.perform(put("/users/" + id + "/friends/" + id))
                 .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    @DisplayName("DELETE /users/{id} - удаление пользователя")
+    void deleteUser_removesUser() throws Exception {
+        MvcResult result = mockMvc.perform(post("/users")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(validUserJson()))
+                .andExpect(status().isCreated())
+                .andReturn();
+
+        int id = objectMapper.readTree(
+                result.getResponse().getContentAsString()
+        ).get("id").asInt();
+
+        mockMvc.perform(delete("/users/" + id))
+                .andExpect(status().isOk());
+
+        mockMvc.perform(get("/users/" + id))
+                .andExpect(status().isNotFound());
+
+        mockMvc.perform(delete("/users/" + id))
+                .andExpect(status().isNotFound());
+    }
+
+    private int createUser(String login) throws Exception {
+        MvcResult result = mockMvc.perform(post("/users")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(java.util.Map.of(
+                                "email", login + "@mail.ru",
+                                "login", login,
+                                "birthday", "1990-01-01"
+                        ))))
+                .andExpect(status().isCreated())
+                .andReturn();
+        return objectMapper.readTree(result.getResponse().getContentAsString()).get("id").asInt();
+    }
+
+    private int createFilm(String name) throws Exception {
+        MvcResult result = mockMvc.perform(post("/films")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(java.util.Map.of(
+                                "name", name,
+                                "description", "Description",
+                                "releaseDate", "1990-01-01",
+                                "duration", 120,
+                                "mpa", java.util.Map.of("id", 1)
+                        ))))
+                .andExpect(status().isCreated())
+                .andReturn();
+        return objectMapper.readTree(result.getResponse().getContentAsString()).get("id").asInt();
     }
 }

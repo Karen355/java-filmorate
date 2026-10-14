@@ -20,9 +20,9 @@ public interface UserStorage {
 
     List<User> findAll();
 
-    void addFriend(Integer userId, Integer friendId);
+    boolean addFriend(Integer userId, Integer friendId);
 
-    void removeFriend(Integer userId, Integer friendId);
+    boolean removeFriend(Integer userId, Integer friendId);
 
     List<User> getFriends(Integer userId);
 

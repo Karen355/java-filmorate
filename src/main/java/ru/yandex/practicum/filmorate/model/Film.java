@@ -1,5 +1,6 @@
 package ru.yandex.practicum.filmorate.model;
 
+import com.fasterxml.jackson.annotation.JsonAlias;
 import com.fasterxml.jackson.annotation.JsonSetter;
 import com.fasterxml.jackson.annotation.Nulls;
 import jakarta.validation.Valid;
@@ -29,6 +30,7 @@ public class Film {
     private Integer id;
 
     @NotBlank(message = "Название фильма не может быть пустым")
+    @Size(max = 255, message = "Название фильма не может превышать 255 символов")
     private String name;
 
     @Size(max = 200, message = "Описание не может превышать 200 символов")
@@ -49,4 +51,10 @@ public class Film {
     @Builder.Default
     @JsonSetter(nulls = Nulls.AS_EMPTY)
     private List<@NotNull @Valid Genre> genres = new ArrayList<>();
+
+    @Builder.Default
+    // В ТЗ используется director, в тестах PR - directors.
+    @JsonAlias("director")
+    @JsonSetter(nulls = Nulls.AS_EMPTY)
+    private List<@NotNull Director> directors = new ArrayList<>();
 }

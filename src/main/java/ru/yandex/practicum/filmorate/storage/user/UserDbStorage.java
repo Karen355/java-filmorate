@@ -65,14 +65,20 @@ public class UserDbStorage implements UserStorage {
     }
 
     @Override
-    public void addFriend(Integer userId, Integer friendId) {
-        jdbcTemplate.update("MERGE INTO friendships (user_id, friend_id) KEY (user_id, friend_id) VALUES (?, ?)",
-                userId, friendId);
+    public boolean addFriend(Integer userId, Integer friendId) {
+        int updated = jdbcTemplate.update("""
+                INSERT INTO friendships (user_id, friend_id)
+                SELECT ?, ?
+                WHERE NOT EXISTS (
+                    SELECT 1 FROM friendships WHERE user_id = ? AND friend_id = ?
+                )
+                """, userId, friendId, userId, friendId);
+        return updated > 0;
     }
 
     @Override
-    public void removeFriend(Integer userId, Integer friendId) {
-        jdbcTemplate.update("DELETE FROM friendships WHERE user_id = ? AND friend_id = ?", userId, friendId);
+    public boolean removeFriend(Integer userId, Integer friendId) {
+        return jdbcTemplate.update("DELETE FROM friendships WHERE user_id = ? AND friend_id = ?", userId, friendId) > 0;
     }
 
     @Override
